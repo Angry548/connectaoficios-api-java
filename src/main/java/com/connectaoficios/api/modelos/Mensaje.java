@@ -24,10 +24,6 @@ public class Mensaje {
     )
     private Conversacion conversacion;
 
-    /*
-     * ID externo del usuario que envió el mensaje.
-     * El usuario pertenece a la API .NET.
-     */
     @Column(name = "remitente_id", nullable = false)
     private Integer remitenteId;
 
