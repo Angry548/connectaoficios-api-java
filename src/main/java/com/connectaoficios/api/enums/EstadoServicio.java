@@ -1,4 +1,7 @@
 package com.connectaoficios.api.enums;
 
-public class EstadoServicio {
+public enum EstadoServicio {
+
+    ACTIVO,
+    INACTIVO
 }
