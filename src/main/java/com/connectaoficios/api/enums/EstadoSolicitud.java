@@ -1,4 +1,11 @@
 package com.connectaoficios.api.enums;
 
-public class EstadoSolicitud {
+public enum EstadoSolicitud {
+
+    PENDIENTE,
+    ACEPTADA,
+    RECHAZADA,
+    EN_PROCESO,
+    COMPLETADA,
+    CANCELADA
 }
