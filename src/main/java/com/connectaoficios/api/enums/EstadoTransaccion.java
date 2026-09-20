@@ -1,4 +1,9 @@
 package com.connectaoficios.api.enums;
 
-public class EstadoTransaccion {
+public enum EstadoTransaccion {
+
+    PENDIENTE,
+    APROBADA,
+    RECHAZADA,
+    CANCELADA
 }
