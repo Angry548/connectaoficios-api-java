@@ -1,4 +1,9 @@
 package com.connectaoficios.api.enums;
 
-public class EstadoReporte {
+public enum EstadoReporte {
+
+    PENDIENTE,
+    EN_REVISION,
+    RESUELTO,
+    RECHAZADO
 }
