@@ -1,4 +1,9 @@
 package com.connectaoficios.api.enums;
 
-public class EstadoPromocion {
+public enum EstadoPromocion {
+
+    PENDIENTE,
+    ACTIVA,
+    FINALIZADA,
+    CANCELADA
 }
