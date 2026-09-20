@@ -1,0 +1,473 @@
+@startuml
+
+title ConnectaOficios - Diagrama de Clases API Java
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+left to right direction
+
+
+class PerfilTrabajador {
+    - idPerfil: Long
+    - trabajadorId: Integer
+    - oficioPrincipal: String
+    - descripcionProfesional: String
+    - experienciaLaboral: String
+    - fotoUrl: String
+    - porcentajeCompletitud: Integer
+    - zonaPrincipal: ZonaCobertura
+    - fechaCreacion: LocalDateTime
+    - fechaActualizacion: LocalDateTime
+    + obtenerTodos(): List<PerfilTrabajador>
+    + obtenerPorId(id: Long): Optional<PerfilTrabajador>
+    + obtenerPorTrabajadorId(trabajadorId: Integer): Optional<PerfilTrabajador>
+    + guardar(m: PerfilTrabajador): PerfilTrabajador
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<PerfilTrabajador>
+    + calcularPorcentajeCompletitud(): Integer
+    + actualizarPerfil(): PerfilTrabajador
+}
+
+
+class Categoria {
+    - idCategoria: Long
+    - nombre: String
+    - descripcion: String
+    - activo: Boolean
+    + obtenerTodos(): List<Categoria>
+    + obtenerPorId(id: Long): Optional<Categoria>
+    + guardar(m: Categoria): Categoria
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Categoria>
+    + activar(): void
+    + desactivar(): void
+}
+
+
+class ZonaCobertura {
+    - idZona: Long
+    - departamento: String
+    - municipio: String
+    - localidad: String
+    - activo: Boolean
+    + obtenerTodos(): List<ZonaCobertura>
+    + obtenerPorId(id: Long): Optional<ZonaCobertura>
+    + guardar(m: ZonaCobertura): ZonaCobertura
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<ZonaCobertura>
+    + buscarPorTexto(texto: String): List<ZonaCobertura>
+    + activar(): void
+    + desactivar(): void
+}
+
+
+class Servicio {
+    - idServicio: Long
+    - perfilTrabajador: PerfilTrabajador
+    - categoria: Categoria
+    - titulo: String
+    - descripcion: String
+    - precioMinimo: BigDecimal
+    - precioMaximo: BigDecimal
+    - estado: EstadoServicio
+    - eliminado: Boolean
+    - fechaCreacion: LocalDateTime
+    - fechaActualizacion: LocalDateTime
+    - fechaEliminacion: LocalDateTime
+    + obtenerTodos(): List<Servicio>
+    + obtenerPorId(id: Long): Optional<Servicio>
+    + guardar(m: Servicio): Servicio
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Servicio>
+    + activar(): void
+    + desactivar(): void
+    + eliminarLogicamente(): void
+    + perteneceATrabajador(trabajadorId: Integer): Boolean
+    + estaDisponible(): Boolean
+}
+
+
+class DisponibilidadServicio {
+    - idDisponibilidad: Long
+    - servicio: Servicio
+    - diaSemana: DiaSemana
+    - horaInicio: LocalTime
+    - horaFin: LocalTime
+    - activo: Boolean
+    + obtenerTodos(): List<DisponibilidadServicio>
+    + obtenerPorId(id: Long): Optional<DisponibilidadServicio>
+    + guardar(m: DisponibilidadServicio): DisponibilidadServicio
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<DisponibilidadServicio>
+    + activar(): void
+    + desactivar(): void
+    + horarioValido(): Boolean
+}
+
+
+class SolicitudServicio {
+    - idSolicitud: Long
+    - servicio: Servicio
+    - clienteId: Integer
+    - trabajadorId: Integer
+    - fechaPropuesta: LocalDate
+    - horaAproximada: LocalTime
+    - direccionServicio: String
+    - descripcionTrabajo: String
+    - estado: EstadoSolicitud
+    - motivoCancelacion: String
+    - fechaCreacion: LocalDateTime
+    - fechaActualizacion: LocalDateTime
+    + obtenerTodos(): List<SolicitudServicio>
+    + obtenerPorId(id: Long): Optional<SolicitudServicio>
+    + guardar(m: SolicitudServicio): SolicitudServicio
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<SolicitudServicio>
+    + aceptar(): void
+    + rechazar(): void
+    + iniciar(): void
+    + completar(): void
+    + cancelar(motivo: String): void
+    + puedeCambiarA(estado: EstadoSolicitud): Boolean
+    + esParticipante(usuarioId: Integer): Boolean
+}
+
+
+class HistorialEstadoSolicitud {
+    - idHistorial: Long
+    - solicitud: SolicitudServicio
+    - estadoAnterior: EstadoSolicitud
+    - estadoNuevo: EstadoSolicitud
+    - cambiadoPorId: Integer
+    - motivo: String
+    - fechaCambio: LocalDateTime
+    + obtenerTodos(): List<HistorialEstadoSolicitud>
+    + obtenerPorId(id: Long): Optional<HistorialEstadoSolicitud>
+    + guardar(m: HistorialEstadoSolicitud): HistorialEstadoSolicitud
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<HistorialEstadoSolicitud>
+    + obtenerPorSolicitud(idSolicitud: Long): List<HistorialEstadoSolicitud>
+}
+
+
+class Conversacion {
+    - idConversacion: Long
+    - solicitud: SolicitudServicio
+    - fechaCreacion: LocalDateTime
+    + obtenerTodos(): List<Conversacion>
+    + obtenerPorId(id: Long): Optional<Conversacion>
+    + guardar(m: Conversacion): Conversacion
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Conversacion>
+    + obtenerPorSolicitud(idSolicitud: Long): Optional<Conversacion>
+    + puedeEnviarMensajes(): Boolean
+    + esParticipante(usuarioId: Integer): Boolean
+}
+
+
+class Mensaje {
+    - idMensaje: Long
+    - conversacion: Conversacion
+    - remitenteId: Integer
+    - contenido: String
+    - fechaEnvio: LocalDateTime
+    - leido: Boolean
+    + obtenerTodos(): List<Mensaje>
+    + obtenerPorId(id: Long): Optional<Mensaje>
+    + guardar(m: Mensaje): Mensaje
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Mensaje>
+    + obtenerPorConversacion(idConversacion: Long): List<Mensaje>
+    + marcarComoLeido(): void
+}
+
+
+class Notificacion {
+    - idNotificacion: Long
+    - usuarioDestinoId: Integer
+    - tipo: TipoNotificacion
+    - titulo: String
+    - mensaje: String
+    - referenciaId: Long
+    - leida: Boolean
+    - fechaCreacion: LocalDateTime
+    + obtenerTodos(): List<Notificacion>
+    + obtenerPorId(id: Long): Optional<Notificacion>
+    + guardar(m: Notificacion): Notificacion
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Notificacion>
+    + obtenerPorUsuario(usuarioId: Integer): List<Notificacion>
+    + marcarComoLeida(): void
+}
+
+
+class Resena {
+    - idResena: Long
+    - solicitud: SolicitudServicio
+    - servicio: Servicio
+    - perfilTrabajador: PerfilTrabajador
+    - clienteId: Integer
+    - calificacion: Integer
+    - comentario: String
+    - fechaCreacion: LocalDateTime
+    + obtenerTodos(): List<Resena>
+    + obtenerPorId(id: Long): Optional<Resena>
+    + guardar(m: Resena): Resena
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Resena>
+    + obtenerPorTrabajador(trabajadorId: Integer): List<Resena>
+    + validarCalificacion(): Boolean
+    + puedeEvaluar(): Boolean
+}
+
+
+class Reporte {
+    - idReporte: Long
+    - usuarioReportanteId: Integer
+    - usuarioReportadoId: Integer
+    - servicio: Servicio
+    - tipo: TipoReporte
+    - motivo: String
+    - descripcion: String
+    - estado: EstadoReporte
+    - resolucion: String
+    - accionTomada: String
+    - administradorId: Integer
+    - fechaCreacion: LocalDateTime
+    - fechaResolucion: LocalDateTime
+    + obtenerTodos(): List<Reporte>
+    + obtenerPorId(id: Long): Optional<Reporte>
+    + guardar(m: Reporte): Reporte
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Reporte>
+    + iniciarRevision(): void
+    + resolver(resolucion: String, accion: String): void
+    + rechazar(resolucion: String): void
+}
+
+
+class PlanPromocion {
+    - idPlanPromocion: Long
+    - nombre: String
+    - descripcion: String
+    - duracionDias: Integer
+    - precio: BigDecimal
+    - activo: Boolean
+    + obtenerTodos(): List<PlanPromocion>
+    + obtenerPorId(id: Long): Optional<PlanPromocion>
+    + guardar(m: PlanPromocion): PlanPromocion
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<PlanPromocion>
+    + activar(): void
+    + desactivar(): void
+    + calcularFechaFin(fechaInicio: LocalDateTime): LocalDateTime
+}
+
+
+class Promocion {
+    - idPromocion: Long
+    - servicio: Servicio
+    - planPromocion: PlanPromocion
+    - trabajadorId: Integer
+    - estado: EstadoPromocion
+    - fechaInicio: LocalDateTime
+    - fechaFin: LocalDateTime
+    - fechaCreacion: LocalDateTime
+    + obtenerTodos(): List<Promocion>
+    + obtenerPorId(id: Long): Optional<Promocion>
+    + guardar(m: Promocion): Promocion
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<Promocion>
+    + activar(): void
+    + finalizar(): void
+    + cancelar(): void
+    + estaVigente(): Boolean
+}
+
+
+class TransaccionPago {
+    - idTransaccion: Long
+    - promocion: Promocion
+    - trabajadorId: Integer
+    - monto: BigDecimal
+    - moneda: String
+    - referenciaExterna: String
+    - estado: EstadoTransaccion
+    - fechaTransaccion: LocalDateTime
+    + obtenerTodos(): List<TransaccionPago>
+    + obtenerPorId(id: Long): Optional<TransaccionPago>
+    + guardar(m: TransaccionPago): TransaccionPago
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<TransaccionPago>
+    + aprobar(referencia: String): void
+    + rechazar(): void
+    + cancelar(): void
+}
+
+
+class ReputacionTrabajador {
+    - idReputacion: Long
+    - perfilTrabajador: PerfilTrabajador
+    - calificacionPromedio: BigDecimal
+    - totalResenas: Integer
+    - serviciosCompletados: Integer
+    - puntuacionRanking: BigDecimal
+    - posicionRanking: Integer
+    - insignia: InsigniaReputacion
+    - fechaActualizacion: LocalDateTime
+    + obtenerTodos(): List<ReputacionTrabajador>
+    + obtenerPorId(id: Long): Optional<ReputacionTrabajador>
+    + guardar(m: ReputacionTrabajador): ReputacionTrabajador
+    + eliminar(id: Long): void
+    + obtenerTodosPaginados(pageable: Pageable): Page<ReputacionTrabajador>
+    + recalcularPromedio(): BigDecimal
+    + calcularPuntuacionRanking(): BigDecimal
+    + actualizarInsignia(): void
+    + actualizarPosicion(posicion: Integer): void
+}
+
+
+enum EstadoServicio {
+    ACTIVO
+    INACTIVO
+}
+
+
+enum DiaSemana {
+    LUNES
+    MARTES
+    MIERCOLES
+    JUEVES
+    VIERNES
+    SABADO
+    DOMINGO
+}
+
+
+enum EstadoSolicitud {
+    PENDIENTE
+    ACEPTADA
+    RECHAZADA
+    EN_PROCESO
+    COMPLETADA
+    CANCELADA
+}
+
+
+enum TipoNotificacion {
+    NUEVA_SOLICITUD
+    CAMBIO_ESTADO_SOLICITUD
+    NUEVO_MENSAJE
+    NUEVA_RESENA
+    PROMOCION
+    SISTEMA
+}
+
+
+enum EstadoReporte {
+    PENDIENTE
+    EN_REVISION
+    RESUELTO
+    RECHAZADO
+}
+
+
+enum TipoReporte {
+    USUARIO
+    SERVICIO
+}
+
+
+enum EstadoPromocion {
+    PENDIENTE
+    ACTIVA
+    FINALIZADA
+    CANCELADA
+}
+
+
+enum EstadoTransaccion {
+    PENDIENTE
+    APROBADA
+    RECHAZADA
+    CANCELADA
+}
+
+
+enum InsigniaReputacion {
+    NUEVO_TRABAJADOR
+    TRABAJADOR_CONFIABLE
+    MEJOR_VALORADO
+    TOP_PLATAFORMA
+}
+
+
+' =========================================================
+' RELACIONES Y ASOCIACIONES
+' =========================================================
+
+ZonaCobertura "1" -- "0..*" PerfilTrabajador : zona principal de >
+
+PerfilTrabajador "1" -- "0..*" Servicio : publica >
+
+Categoria "1" -- "0..*" Servicio : clasifica >
+
+Servicio "0..*" -- "1..*" ZonaCobertura : cubre >
+
+Servicio "1" -- "1..*" DisponibilidadServicio : dispone de >
+
+Servicio "1" -- "0..*" SolicitudServicio : recibe >
+
+SolicitudServicio "1" -- "0..*" HistorialEstadoSolicitud : registra >
+
+SolicitudServicio "1" -- "0..1" Conversacion : genera >
+
+Conversacion "1" -- "0..*" Mensaje : contiene >
+
+SolicitudServicio "1" -- "0..1" Resena : genera >
+
+Servicio "1" -- "0..*" Resena : recibe >
+
+PerfilTrabajador "1" -- "0..*" Resena : es evaluado en >
+
+Servicio "0..1" -- "0..*" Reporte : es reportado en >
+
+PlanPromocion "1" -- "0..*" Promocion : define >
+
+Servicio "1" -- "0..*" Promocion : recibe >
+
+Promocion "1" -- "0..*" TransaccionPago : registra >
+
+PerfilTrabajador "1" -- "0..1" ReputacionTrabajador : posee >
+
+
+' =========================================================
+' RELACIONES CON ENUMS
+' =========================================================
+
+EstadoServicio "1" -- "0..*" Servicio : define estado >
+
+DiaSemana "1" -- "0..*" DisponibilidadServicio : define día >
+
+EstadoSolicitud "1" -- "0..*" SolicitudServicio : define estado >
+
+EstadoSolicitud "1" -- "0..*" HistorialEstadoSolicitud : registra estado >
+
+TipoNotificacion "1" -- "0..*" Notificacion : clasifica >
+
+EstadoReporte "1" -- "0..*" Reporte : define estado >
+
+TipoReporte "1" -- "0..*" Reporte : clasifica >
+
+EstadoPromocion "1" -- "0..*" Promocion : define estado >
+
+EstadoTransaccion "1" -- "0..*" TransaccionPago : define estado >
+
+InsigniaReputacion "1" -- "0..*" ReputacionTrabajador : asigna >
+
+
+note "trabajadorId, clienteId, remitenteId,\nusuarioDestinoId, usuarioReportanteId,\nusuarioReportadoId y administradorId\nson referencias a usuarios administrados\npor la API .NET; no son llaves foráneas MySQL." as N1
+
+@enduml
