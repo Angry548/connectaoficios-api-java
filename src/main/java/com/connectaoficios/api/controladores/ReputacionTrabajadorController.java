@@ -90,3 +90,7 @@ public class ReputacionTrabajadorController {
         return ResponseEntity.ok(reputacion);
     }
 }
+
+
+
+
