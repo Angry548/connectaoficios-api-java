@@ -186,10 +186,10 @@ public class ReporteService implements IReporteService {
 
     private ReporteSalida convertirASalida(Reporte reporte) {
         ReporteSalida salida = new ReporteSalida();
-        salida.setIdReporte(reporte.getIdReporte());
+        salida.setId(reporte.getId());
         salida.setUsuarioReportanteId(reporte.getUsuarioReportanteId());
         salida.setUsuarioReportadoId(reporte.getUsuarioReportadoId());
-        salida.setServicioId(reporte.getServicio() != null ? reporte.getServicio().getIdServicio() : null);
+        salida.setServicioId(reporte.getServicio() != null ? reporte.getServicio().getId() : null);
         salida.setTipo(reporte.getTipo());
         salida.setMotivo(reporte.getMotivo());
         salida.setDescripcion(reporte.getDescripcion());
