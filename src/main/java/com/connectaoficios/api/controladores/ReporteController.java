@@ -42,21 +42,21 @@ public class ReporteController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Page<ReporteSalida>> obtenerTodosPaginados(Pageable pageable) {
         Page<ReporteSalida> reportes = reporteService.obtenerTodosPaginados(pageable);
         return ResponseEntity.ok(reportes);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ReporteSalida> obtenerPorId(@PathVariable Long id) {
         ReporteSalida reporte = reporteService.obtenerPorId(id);
         return ResponseEntity.ok(reporte);
     }
 
     @GetMapping("/estado/{estado}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Page<ReporteSalida>> obtenerPorEstado(
             @PathVariable EstadoReporte estado,
             Pageable pageable
@@ -66,7 +66,7 @@ public class ReporteController {
     }
 
     @GetMapping("/tipo/{tipo}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Page<ReporteSalida>> obtenerPorTipo(
             @PathVariable TipoReporte tipo,
             Pageable pageable
@@ -76,7 +76,7 @@ public class ReporteController {
     }
 
     @GetMapping("/reportante/{usuarioReportanteId}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<ReporteSalida>> obtenerPorUsuarioReportante(
             @PathVariable Integer usuarioReportanteId
     ) {
@@ -85,7 +85,7 @@ public class ReporteController {
     }
 
     @GetMapping("/reportado/{usuarioReportadoId}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<ReporteSalida>> obtenerPorUsuarioReportado(
             @PathVariable Integer usuarioReportadoId
     ) {
@@ -94,14 +94,14 @@ public class ReporteController {
     }
 
     @PutMapping("/{id}/iniciar-revision")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ReporteSalida> iniciarRevision(@PathVariable Long id) {
         ReporteSalida reporte = reporteService.iniciarRevision(id);
         return ResponseEntity.ok(reporte);
     }
 
     @PutMapping("/{id}/resolver")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ReporteSalida> resolver(
             @PathVariable Long id,
             @Valid @RequestBody ReporteResolucion reporteResolucion,
@@ -113,7 +113,7 @@ public class ReporteController {
     }
 
     @PutMapping("/{id}/rechazar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ReporteSalida> rechazar(
             @PathVariable Long id,
             @Valid @RequestBody ReporteRechazo reporteRechazo,
