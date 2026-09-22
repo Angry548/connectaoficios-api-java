@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 public class ReporteSalida {
 
-    private Long idReporte;
+    private Long id;
 
     private Integer usuarioReportanteId;
 

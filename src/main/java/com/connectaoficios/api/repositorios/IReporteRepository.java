@@ -21,11 +21,11 @@ public interface IReporteRepository extends JpaRepository<Reporte, Long> {
 
     List<Reporte> findByUsuarioReportadoId(Integer usuarioReportadoId);
 
-    List<Reporte> findByServicio_IdServicio(Long idServicio);
+    List<Reporte> findByServicio_Id(Long servicioId);
 
-    boolean existsByUsuarioReportanteIdAndServicio_IdServicioAndEstadoIn(
+    boolean existsByUsuarioReportanteIdAndServicio_IdAndEstadoIn(
             Integer usuarioReportanteId,
-            Long idServicio,
+            Long servicioId,
             List<EstadoReporte> estados
     );
 }
