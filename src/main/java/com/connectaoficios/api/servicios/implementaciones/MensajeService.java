@@ -22,13 +22,16 @@ public class MensajeService implements IMensajeService {
 
     private final IMensajeRepository mensajeRepository;
     private final IConversacionRepository conversacionRepository;
+    private final IChatTiempoRealService chatTiempoRealService;
 
     public MensajeService(
             IMensajeRepository mensajeRepository,
-            IConversacionRepository conversacionRepository
+            IConversacionRepository conversacionRepository,
+            IChatTiempoRealService chatTiempoRealService
     ) {
         this.mensajeRepository = mensajeRepository;
         this.conversacionRepository = conversacionRepository;
+        this.chatTiempoRealService = chatTiempoRealService;
     }
 
     @Override
@@ -62,7 +65,12 @@ public class MensajeService implements IMensajeService {
         Mensaje mensajeGuardado =
                 mensajeRepository.save(mensaje);
 
-        return convertirASalida(mensajeGuardado);
+        MensajeSalida salida =
+                convertirASalida(mensajeGuardado);
+
+        chatTiempoRealService.publicarMensaje(salida);
+
+        return salida;
     }
 
     @Override
