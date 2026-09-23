@@ -1,6 +1,5 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
-
 import com.connectaoficios.api.dtos.notificacion.NotificacionGuardar;
 import com.connectaoficios.api.dtos.notificacion.NotificacionRespuesta;
 import com.connectaoficios.api.enums.TipoNotificacion;
@@ -76,6 +75,41 @@ class NotificacionServiceTest {
 
         verify(notificacionRepository, times(1)).save(any(Notificacion.class));
     }
+
+    // --- PRUEBAS ESPECÍFICAS DE TIPOS DE NOTIFICACIÓN ---
+
+    @Test
+    void guardar_debeConvertirTipoEnMinusculasAEnumCorrecto() {
+        NotificacionGuardar dto = new NotificacionGuardar();
+        dto.setUsuarioDestinoId(100);
+        dto.setTipo("solicitud"); // En minúsculas
+        dto.setTitulo("Solicitud Aceptada");
+        dto.setMensaje("Tu solicitud fue aceptada.");
+
+        when(notificacionRepository.save(any(Notificacion.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        NotificacionRespuesta resultado = notificacionService.guardar(dto);
+
+        assertNotNull(resultado);
+        assertEquals("SOLICITUD", resultado.getTipo());
+        verify(notificacionRepository, times(1)).save(any(Notificacion.class));
+    }
+
+    @Test
+    void guardar_debeLanzarExcepcion_cuandoTipoNotificacionEsInvalido() {
+        NotificacionGuardar dto = new NotificacionGuardar();
+        dto.setUsuarioDestinoId(100);
+        dto.setTipo("TIPO_INEXISTENTE");
+        dto.setTitulo("Prueba");
+        dto.setMensaje("Mensaje de prueba");
+
+        assertThrows(IllegalArgumentException.class, () -> notificacionService.guardar(dto));
+
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+    }
+
+    // --- PRUEBAS DE CONSULTAS Y OPERACIONES ---
 
     @Test
     void obtenerPorId_debeRetornarNotificacion() {
