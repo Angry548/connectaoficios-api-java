@@ -36,4 +36,5 @@ public interface ISolicitudServicioService {
     SolicitudServicioRespuesta cancelar(Long id, SolicitudServicioCancelar solicitudCancelar);
 
     boolean esParticipante(Long id, Integer usuarioId);
+
 }
