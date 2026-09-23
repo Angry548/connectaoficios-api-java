@@ -1,5 +1,6 @@
 package com.connectaoficios.api.repositorios;
 
+
 import com.connectaoficios.api.modelos.SolicitudServicio;
 import com.connectaoficios.api.modelos.EstadoSolicitud;
 import org.springframework.data.domain.Page;
