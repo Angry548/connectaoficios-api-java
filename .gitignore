@@ -33,7 +33,9 @@ build/
 .vscode/
 opencode.json
 app.log
-# .saul/
+# Directorios y archivos locales fuera de control de versiones
+saul/
+tools/
 
 ### Variables de entorno y secretos ###
 .env
