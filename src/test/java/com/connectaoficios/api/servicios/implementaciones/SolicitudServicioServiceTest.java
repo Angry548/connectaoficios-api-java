@@ -1,6 +1,5 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
-
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRespuesta;
@@ -17,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -95,6 +93,8 @@ class SolicitudServicioServiceTest {
         assertThrows(RecursoNoEncontradoException.class, () -> solicitudService.obtenerPorId(99L));
     }
 
+    // --- PRUEBAS DE TRANSICIONES DE ESTADO VÁLIDAS ---
+
     @Test
     void aceptar_debeCambiarEstadoAAceptada() {
         solicitud.setEstado(EstadoSolicitud.PENDIENTE);
@@ -106,6 +106,48 @@ class SolicitudServicioServiceTest {
 
         assertNotNull(resultado);
         assertEquals(EstadoSolicitud.ACEPTADA.name(), resultado.getEstado());
+        verify(solicitudRepository, times(1)).save(solicitud);
+    }
+
+    @Test
+    void rechazar_debeCambiarEstadoARechazada() {
+        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+        when(solicitudRepository.save(any(SolicitudServicio.class))).thenReturn(solicitud);
+
+        SolicitudServicioRespuesta resultado = solicitudService.rechazar(1L);
+
+        assertNotNull(resultado);
+        assertEquals(EstadoSolicitud.RECHAZADA.name(), resultado.getEstado());
+        verify(solicitudRepository, times(1)).save(solicitud);
+    }
+
+    @Test
+    void iniciar_debeCambiarEstadoAEnProceso() {
+        solicitud.setEstado(EstadoSolicitud.ACEPTADA);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+        when(solicitudRepository.save(any(SolicitudServicio.class))).thenReturn(solicitud);
+
+        SolicitudServicioRespuesta resultado = solicitudService.iniciar(1L);
+
+        assertNotNull(resultado);
+        assertEquals(EstadoSolicitud.EN_PROCESO.name(), resultado.getEstado());
+        verify(solicitudRepository, times(1)).save(solicitud);
+    }
+
+    @Test
+    void completar_debeCambiarEstadoACompletada() {
+        solicitud.setEstado(EstadoSolicitud.EN_PROCESO);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+        when(solicitudRepository.save(any(SolicitudServicio.class))).thenReturn(solicitud);
+
+        SolicitudServicioRespuesta resultado = solicitudService.completar(1L);
+
+        assertNotNull(resultado);
+        assertEquals(EstadoSolicitud.COMPLETADA.name(), resultado.getEstado());
         verify(solicitudRepository, times(1)).save(solicitud);
     }
 
@@ -126,6 +168,60 @@ class SolicitudServicioServiceTest {
         assertEquals("El cliente no estará disponible", resultado.getMotivoCancelacion());
         verify(solicitudRepository, times(1)).save(solicitud);
     }
+
+    // --- PRUEBAS DE TRANSICIONES INVÁLIDAS (REGLAS DE NEGOCIO) ---
+
+    @Test
+    void iniciar_debeLanzarExcepcion_cuandoSolicitudEstaPendiente() {
+        // Regla: Debe aceptarse antes de iniciarse
+        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+
+        assertThrows(ReglaNegocioException.class, () -> solicitudService.iniciar(1L));
+
+        verify(solicitudRepository, never()).save(any(SolicitudServicio.class));
+    }
+
+    @Test
+    void completar_debeLanzarExcepcion_cuandoSolicitudEstaPendiente() {
+        // Regla: No se puede completar directamente desde PENDIENTE
+        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+
+        assertThrows(ReglaNegocioException.class, () -> solicitudService.completar(1L));
+
+        verify(solicitudRepository, never()).save(any(SolicitudServicio.class));
+    }
+
+    @Test
+    void aceptar_debeLanzarExcepcion_cuandoSolicitudYaEstaCompletada() {
+        // Regla: Estado final COMPLETADA no permite volver a ACEPTADA
+        solicitud.setEstado(EstadoSolicitud.COMPLETADA);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+
+        assertThrows(ReglaNegocioException.class, () -> solicitudService.aceptar(1L));
+
+        verify(solicitudRepository, never()).save(any(SolicitudServicio.class));
+    }
+
+    @Test
+    void cancelar_debeLanzarExcepcion_cuandoSolicitudYaEstaRechazada() {
+        // Regla: No se puede cancelar lo que ya fue RECHAZADO
+        SolicitudServicioCancelar dto = new SolicitudServicioCancelar();
+        dto.setMotivoCancelacion("Intento de cancelación invalido");
+        solicitud.setEstado(EstadoSolicitud.RECHAZADA);
+
+        when(solicitudRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+
+        assertThrows(ReglaNegocioException.class, () -> solicitudService.cancelar(1L, dto));
+
+        verify(solicitudRepository, never()).save(any(SolicitudServicio.class));
+    }
+
+    // --- PRUEBAS DE OPERACIONES AUXILIARES ---
 
     @Test
     void eliminar_debeBorrarSolicitudSiExiste() {
