@@ -23,5 +23,3 @@ public interface IHistorialEstadoSolicitudService {
 
     void eliminar(Long id);
 }
-
-
