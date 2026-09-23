@@ -1,5 +1,6 @@
 package com.connectaoficios.api.repositorios;
 
+
 import com.connectaoficios.api.modelos.Notificacion;
 import com.connectaoficios.api.enums.TipoNotificacion;
 import org.springframework.data.domain.Page;

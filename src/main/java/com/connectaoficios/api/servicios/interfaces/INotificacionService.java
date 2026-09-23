@@ -1,5 +1,6 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+
 import com.connectaoficios.api.dtos.notificacion.NotificacionGuardar;
 import com.connectaoficios.api.dtos.notificacion.NotificacionRespuesta;
 import org.springframework.data.domain.Page;
