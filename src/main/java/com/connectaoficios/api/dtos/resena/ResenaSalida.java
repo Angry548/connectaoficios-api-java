@@ -18,3 +18,4 @@ public class ResenaSalida {
     private String comentario;
     private LocalDateTime fechaCreacion;
 }
+
