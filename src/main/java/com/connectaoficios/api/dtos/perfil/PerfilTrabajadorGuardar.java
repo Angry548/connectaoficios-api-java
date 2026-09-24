@@ -15,6 +15,7 @@ public class PerfilTrabajadorGuardar {
     @Size(max = 100, message = "El oficio principal no puede superar los 100 caracteres")
     private String oficioPrincipal;
 
+
     @Size(max = 1000, message = "La descripción profesional no puede superar los 1000 caracteres")
     private String descripcionProfesional;
 
