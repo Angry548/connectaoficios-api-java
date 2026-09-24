@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Setter
 public class PerfilTrabajadorSalida {
 
+
     private Long id;
     private Integer trabajadorId;
     private String oficioPrincipal;

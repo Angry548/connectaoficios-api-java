@@ -17,6 +17,7 @@ public class PerfilTrabajadorModificar {
     @Size(max = 2000, message = "La experiencia laboral no puede superar los 2000 caracteres")
     private String experienciaLaboral;
 
+
     private String fotoUrl;
 
     private Long zonaPrincipalId;
