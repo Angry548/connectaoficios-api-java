@@ -76,6 +76,7 @@ public class PerfilTrabajadorController {
         Integer trabajadorId =
                 Integer.valueOf(jwt.getSubject());
 
+
         return ResponseEntity.ok(
                 perfilService.modificar(
                         trabajadorId,
