@@ -18,6 +18,7 @@ public class PerfilTrabajadorModificar {
     private String experienciaLaboral;
 
 
+
     private String fotoUrl;
 
     private Long zonaPrincipalId;

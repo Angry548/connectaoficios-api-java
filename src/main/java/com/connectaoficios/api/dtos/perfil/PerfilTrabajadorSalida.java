@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class PerfilTrabajadorSalida {
 
 
+
     private Long id;
     private Integer trabajadorId;
     private String oficioPrincipal;
