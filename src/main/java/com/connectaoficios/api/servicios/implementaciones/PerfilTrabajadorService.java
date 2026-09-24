@@ -13,6 +13,7 @@ import com.connectaoficios.api.servicios.interfaces.IPerfilTrabajadorService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 @Service
 public class PerfilTrabajadorService
         implements IPerfilTrabajadorService {

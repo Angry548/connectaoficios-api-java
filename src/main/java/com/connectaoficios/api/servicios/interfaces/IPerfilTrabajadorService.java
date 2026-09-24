@@ -11,6 +11,8 @@ public interface IPerfilTrabajadorService {
             Integer trabajadorId
     );
 
+
+
     PerfilTrabajadorSalida obtenerPorId(Long id);
 
     PerfilTrabajadorSalida obtenerPorTrabajadorId(
