@@ -31,6 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+opencode.json
+app.log
+# Directorios y archivos locales fuera de control de versiones
+saul/
+tools/
 
 ### Variables de entorno y secretos ###
 .env
