@@ -23,7 +23,7 @@ public class CategoriaController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<CategoriaSalida> guardar(
             @Valid @RequestBody CategoriaGuardar categoriaGuardar
     ) {
@@ -47,7 +47,7 @@ public class CategoriaController {
     }
 
     @GetMapping("/todas")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<CategoriaSalida>> listarTodas() {
 
         List<CategoriaSalida> categorias =
@@ -69,7 +69,7 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<CategoriaSalida> modificar(
             @PathVariable Long id,
             @Valid @RequestBody CategoriaModificar categoriaModificar
@@ -82,7 +82,7 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Void> eliminar(
             @PathVariable Long id
     ) {

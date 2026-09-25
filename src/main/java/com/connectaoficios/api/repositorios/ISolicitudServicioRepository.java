@@ -1,8 +1,8 @@
 package com.connectaoficios.api.repositorios;
 
-
+import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.modelos.SolicitudServicio;
-import com.connectaoficios.api.modelos.EstadoSolicitud;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,15 +14,35 @@ import java.util.List;
 public interface ISolicitudServicioRepository
         extends JpaRepository<SolicitudServicio, Long> {
 
-    List<SolicitudServicio> findByClienteId(Integer clienteId);
+    List<SolicitudServicio> findByClienteId(
+            Integer clienteId
+    );
 
-    List<SolicitudServicio> findByTrabajadorId(Integer trabajadorId);
+    List<SolicitudServicio> findByTrabajadorId(
+            Integer trabajadorId
+    );
 
-    List<SolicitudServicio> findByEstado(EstadoSolicitud estado);
+    List<SolicitudServicio> findByEstado(
+            EstadoSolicitud estado
+    );
 
-    Page<SolicitudServicio> findByClienteId(Integer clienteId, Pageable pageable);
+    long countByTrabajadorIdAndEstado(
+            Integer trabajadorId,
+            EstadoSolicitud estado
+    );
 
-    Page<SolicitudServicio> findByTrabajadorId(Integer trabajadorId, Pageable pageable);
+    Page<SolicitudServicio> findByClienteId(
+            Integer clienteId,
+            Pageable pageable
+    );
 
-    boolean existsByServicioIdAndClienteId(Long servicioId, Integer clienteId);
+    Page<SolicitudServicio> findByTrabajadorId(
+            Integer trabajadorId,
+            Pageable pageable
+    );
+
+    boolean existsByServicioIdAndClienteId(
+            Long servicioId,
+            Integer clienteId
+    );
 }

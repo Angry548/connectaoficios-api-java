@@ -21,13 +21,25 @@ public interface ITransaccionPagoService {
 
     List<TransaccionPagoSalida> obtenerPorPromocion(Long promocionId);
 
-    Page<TransaccionPagoSalida> obtenerPorEstado(EstadoTransaccion estado, Pageable pageable);
+    Page<TransaccionPagoSalida> obtenerPorEstado(
+            EstadoTransaccion estado,
+            Pageable pageable
+    );
 
-    TransaccionPagoSalida guardar(TransaccionPagoGuardar dto, Integer trabajadorId);
+    TransaccionPagoSalida guardar(
+            TransaccionPagoGuardar dto,
+            Integer trabajadorId
+    );
 
-    TransaccionPagoSalida aprobar(Long id, TransaccionPagoAprobar dto);
+    TransaccionPagoSalida aprobar(
+            Long id,
+            TransaccionPagoAprobar dto
+    );
 
     TransaccionPagoSalida rechazar(Long id);
 
-    TransaccionPagoSalida cancelar(Long id);
+    TransaccionPagoSalida cancelar(
+            Long id,
+            Integer trabajadorId
+    );
 }

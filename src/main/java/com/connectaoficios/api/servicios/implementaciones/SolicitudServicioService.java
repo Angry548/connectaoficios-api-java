@@ -6,14 +6,15 @@ import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRespuesta;
 import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.excepciones.RecursoNoEncontradoException;
 import com.connectaoficios.api.excepciones.ReglaNegocioException;
+import com.connectaoficios.api.modelos.Servicio;
 import com.connectaoficios.api.modelos.SolicitudServicio;
+import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.repositorios.ISolicitudServicioRepository;
 import com.connectaoficios.api.servicios.interfaces.ISolicitudServicioService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,9 +24,14 @@ import java.util.stream.Collectors;
 public class SolicitudServicioService implements ISolicitudServicioService {
 
     private final ISolicitudServicioRepository solicitudRepository;
+    private final IServicioRepository servicioRepository;
 
-    public SolicitudServicioService(ISolicitudServicioRepository solicitudRepository) {
+    public SolicitudServicioService(
+            ISolicitudServicioRepository solicitudRepository,
+            IServicioRepository servicioRepository
+    ) {
         this.solicitudRepository = solicitudRepository;
+        this.servicioRepository = servicioRepository;
     }
 
     @Override
@@ -72,20 +78,29 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Override
     @Transactional
     public SolicitudServicioRespuesta guardar(SolicitudServicioGuardar dto) {
+
+        Servicio servicio = servicioRepository
+                .findByIdAndEliminadoFalse(dto.getServicioId())
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No se encontró el servicio con ID: " + dto.getServicioId()
+                ));
+
         SolicitudServicio solicitud = new SolicitudServicio();
 
+        solicitud.setServicio(servicio);
         solicitud.setClienteId(dto.getClienteId());
         solicitud.setTrabajadorId(dto.getTrabajadorId());
         solicitud.setFechaPropuesta(dto.getFechaPropuesta());
         solicitud.setHoraAproximada(dto.getHoraAproximada());
-        solicitud.setDireccionServicio(dto.getDireccionServicio());
+        solicitud.setDireccion(dto.getDireccionServicio());
         solicitud.setDescripcionTrabajo(dto.getDescripcionTrabajo());
-
         solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+
         solicitud.setFechaCreacion(LocalDateTime.now());
         solicitud.setFechaActualizacion(LocalDateTime.now());
 
         SolicitudServicio guardada = solicitudRepository.save(solicitud);
+
         return convertirARespuesta(guardada);
     }
 
@@ -100,6 +115,7 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Transactional
     public SolicitudServicioRespuesta aceptar(Long id) {
         SolicitudServicio solicitud = buscarPorId(id);
+
         validarTransicionEstado(solicitud, EstadoSolicitud.ACEPTADA);
 
         solicitud.setEstado(EstadoSolicitud.ACEPTADA);
@@ -112,6 +128,7 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Transactional
     public SolicitudServicioRespuesta rechazar(Long id) {
         SolicitudServicio solicitud = buscarPorId(id);
+
         validarTransicionEstado(solicitud, EstadoSolicitud.RECHAZADA);
 
         solicitud.setEstado(EstadoSolicitud.RECHAZADA);
@@ -124,6 +141,7 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Transactional
     public SolicitudServicioRespuesta iniciar(Long id) {
         SolicitudServicio solicitud = buscarPorId(id);
+
         validarTransicionEstado(solicitud, EstadoSolicitud.EN_PROCESO);
 
         solicitud.setEstado(EstadoSolicitud.EN_PROCESO);
@@ -136,6 +154,7 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Transactional
     public SolicitudServicioRespuesta completar(Long id) {
         SolicitudServicio solicitud = buscarPorId(id);
+
         validarTransicionEstado(solicitud, EstadoSolicitud.COMPLETADA);
 
         solicitud.setEstado(EstadoSolicitud.COMPLETADA);
@@ -146,8 +165,12 @@ public class SolicitudServicioService implements ISolicitudServicioService {
 
     @Override
     @Transactional
-    public SolicitudServicioRespuesta cancelar(Long id, SolicitudServicioCancelar dto) {
+    public SolicitudServicioRespuesta cancelar(
+            Long id,
+            SolicitudServicioCancelar dto
+    ) {
         SolicitudServicio solicitud = buscarPorId(id);
+
         validarTransicionEstado(solicitud, EstadoSolicitud.CANCELADA);
 
         solicitud.setEstado(EstadoSolicitud.CANCELADA);
@@ -161,39 +184,82 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Transactional(readOnly = true)
     public boolean esParticipante(Long id, Integer usuarioId) {
         SolicitudServicio solicitud = buscarPorId(id);
-        return usuarioId.equals(solicitud.getClienteId()) || usuarioId.equals(solicitud.getTrabajadorId());
+
+        return usuarioId.equals(solicitud.getClienteId())
+                || usuarioId.equals(solicitud.getTrabajadorId());
     }
 
     // --- Métodos Privados Auxiliares ---
 
     private SolicitudServicio buscarPorId(Long id) {
         return solicitudRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró la solicitud de servicio con ID: " + id));
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "No se encontró la solicitud de servicio con ID: " + id
+                        )
+                );
     }
 
-    private void validarTransicionEstado(SolicitudServicio solicitud, EstadoSolicitud nuevoEstado) {
-        if (!solicitud.puedeCambiarA(nuevoEstado)) {
+    private void validarTransicionEstado(
+            SolicitudServicio solicitud,
+            EstadoSolicitud nuevoEstado
+    ) {
+        EstadoSolicitud estadoActual = solicitud.getEstado();
+
+        boolean transicionValida = switch (estadoActual) {
+
+            case PENDIENTE ->
+                    nuevoEstado == EstadoSolicitud.ACEPTADA
+                            || nuevoEstado == EstadoSolicitud.RECHAZADA
+                            || nuevoEstado == EstadoSolicitud.CANCELADA;
+
+            case ACEPTADA ->
+                    nuevoEstado == EstadoSolicitud.EN_PROCESO
+                            || nuevoEstado == EstadoSolicitud.CANCELADA;
+
+            case EN_PROCESO ->
+                    nuevoEstado == EstadoSolicitud.COMPLETADA
+                            || nuevoEstado == EstadoSolicitud.CANCELADA;
+
+            case RECHAZADA, COMPLETADA, CANCELADA -> false;
+        };
+
+        if (!transicionValida) {
             throw new ReglaNegocioException(
-                    String.format("No se puede cambiar el estado de la solicitud de %s a %s",
-                            solicitud.getEstado(), nuevoEstado)
+                    String.format(
+                            "No se puede cambiar el estado de la solicitud de %s a %s",
+                            estadoActual,
+                            nuevoEstado
+                    )
             );
         }
     }
 
-    private SolicitudServicioRespuesta convertirARespuesta(SolicitudServicio entidad) {
-        SolicitudServicioRespuesta respuesta = new SolicitudServicioRespuesta();
+    private SolicitudServicioRespuesta convertirARespuesta(
+            SolicitudServicio entidad
+    ) {
+        SolicitudServicioRespuesta respuesta =
+                new SolicitudServicioRespuesta();
 
-        respuesta.setIdSolicitud(entidad.getIdSolicitud());
+        respuesta.setIdSolicitud(entidad.getId());
+
         if (entidad.getServicio() != null) {
             respuesta.setServicioId(entidad.getServicio().getId());
         }
+
         respuesta.setClienteId(entidad.getClienteId());
         respuesta.setTrabajadorId(entidad.getTrabajadorId());
         respuesta.setFechaPropuesta(entidad.getFechaPropuesta());
         respuesta.setHoraAproximada(entidad.getHoraAproximada());
-        respuesta.setDireccionServicio(entidad.getDireccionServicio());
+        respuesta.setDireccionServicio(entidad.getDireccion());
         respuesta.setDescripcionTrabajo(entidad.getDescripcionTrabajo());
-        respuesta.setEstado(entidad.getEstado() != null ? entidad.getEstado().name() : null);
+
+        respuesta.setEstado(
+                entidad.getEstado() != null
+                        ? entidad.getEstado().name()
+                        : null
+        );
+
         respuesta.setMotivoCancelacion(entidad.getMotivoCancelacion());
         respuesta.setFechaCreacion(entidad.getFechaCreacion());
         respuesta.setFechaActualizacion(entidad.getFechaActualizacion());
@@ -201,4 +267,3 @@ public class SolicitudServicioService implements ISolicitudServicioService {
         return respuesta;
     }
 }
-

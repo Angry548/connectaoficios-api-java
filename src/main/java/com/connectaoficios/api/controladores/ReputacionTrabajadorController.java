@@ -78,7 +78,7 @@ public class ReputacionTrabajadorController {
     }
 
     @PutMapping("/trabajador/{perfilTrabajadorId}/recalcular")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ReputacionTrabajadorSalida> recalcular(
             @PathVariable Long perfilTrabajadorId
     ) {

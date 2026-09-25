@@ -97,27 +97,75 @@ public class ServicioService implements IServicioService {
 
         Servicio servicio = buscarServicio(id);
 
-        Categoria categoria =
-                buscarCategoriaActiva(
-                        servicioModificar.getCategoriaId()
+        if (servicioModificar.getCategoriaId() != null) {
+            Categoria categoria =
+                    buscarCategoriaActiva(
+                            servicioModificar.getCategoriaId()
+                    );
+
+            servicio.setCategoria(categoria);
+        }
+
+        if (servicioModificar.getTitulo() != null) {
+
+            String titulo = servicioModificar.getTitulo().trim();
+
+            if (titulo.isBlank()) {
+                throw new ReglaNegocioException(
+                        "El título del servicio no puede estar vacío"
                 );
+            }
 
-        validarTarifas(
-                servicioModificar.getTarifaMinima(),
-                servicioModificar.getTarifaMaxima()
-        );
+            servicio.setTitulo(titulo);
+        }
 
-        Set<ZonaCobertura> zonasCobertura =
-                buscarZonas(
-                        servicioModificar.getZonasCoberturaIds()
+        if (servicioModificar.getDescripcion() != null) {
+
+            String descripcion =
+                    servicioModificar.getDescripcion().trim();
+
+            if (descripcion.isBlank()) {
+                throw new ReglaNegocioException(
+                        "La descripción del servicio no puede estar vacía"
                 );
+            }
 
-        servicio.setCategoria(categoria);
-        servicio.setTitulo(servicioModificar.getTitulo().trim());
-        servicio.setDescripcion(servicioModificar.getDescripcion().trim());
-        servicio.setTarifaMinima(servicioModificar.getTarifaMinima());
-        servicio.setTarifaMaxima(servicioModificar.getTarifaMaxima());
-        servicio.setZonasCobertura(zonasCobertura);
+            servicio.setDescripcion(descripcion);
+        }
+
+        BigDecimal tarifaMinima =
+                servicioModificar.getTarifaMinima() != null
+                        ? servicioModificar.getTarifaMinima()
+                        : servicio.getTarifaMinima();
+
+        BigDecimal tarifaMaxima =
+                servicioModificar.getTarifaMaxima() != null
+                        ? servicioModificar.getTarifaMaxima()
+                        : servicio.getTarifaMaxima();
+
+        validarTarifas(tarifaMinima, tarifaMaxima);
+
+        if (servicioModificar.getTarifaMinima() != null) {
+            servicio.setTarifaMinima(
+                    servicioModificar.getTarifaMinima()
+            );
+        }
+
+        if (servicioModificar.getTarifaMaxima() != null) {
+            servicio.setTarifaMaxima(
+                    servicioModificar.getTarifaMaxima()
+            );
+        }
+
+        if (servicioModificar.getZonasCoberturaIds() != null) {
+
+            Set<ZonaCobertura> zonasCobertura =
+                    buscarZonas(
+                            servicioModificar.getZonasCoberturaIds()
+                    );
+
+            servicio.setZonasCobertura(zonasCobertura);
+        }
 
         Servicio servicioActualizado =
                 servicioRepository.save(servicio);

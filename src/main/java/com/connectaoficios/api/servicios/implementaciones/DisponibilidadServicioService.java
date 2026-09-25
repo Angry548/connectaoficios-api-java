@@ -96,38 +96,56 @@ public class DisponibilidadServicioService
         DisponibilidadServicio disponibilidad =
                 buscarDisponibilidad(id);
 
+        DiaSemana diaSemana =
+                disponibilidadModificar.getDiaSemana() != null
+                        ? disponibilidadModificar.getDiaSemana()
+                        : disponibilidad.getDiaSemana();
+
+        LocalTime horaInicio =
+                disponibilidadModificar.getHoraInicio() != null
+                        ? disponibilidadModificar.getHoraInicio()
+                        : disponibilidad.getHoraInicio();
+
+        LocalTime horaFin =
+                disponibilidadModificar.getHoraFin() != null
+                        ? disponibilidadModificar.getHoraFin()
+                        : disponibilidad.getHoraFin();
+
         validarHorario(
-                disponibilidadModificar.getHoraInicio(),
-                disponibilidadModificar.getHoraFin()
+                horaInicio,
+                horaFin
         );
 
-        Long servicioId = disponibilidad.getServicio().getId();
+        Long servicioId =
+                disponibilidad.getServicio().getId();
 
         validarSinDuplicado(
                 servicioId,
-                disponibilidadModificar.getDiaSemana(),
-                disponibilidadModificar.getHoraInicio(),
-                disponibilidadModificar.getHoraFin(),
+                diaSemana,
+                horaInicio,
+                horaFin,
                 id
         );
 
         validarSinSolapamiento(
                 servicioId,
-                disponibilidadModificar.getDiaSemana(),
-                disponibilidadModificar.getHoraInicio(),
-                disponibilidadModificar.getHoraFin(),
+                diaSemana,
+                horaInicio,
+                horaFin,
                 id
         );
 
-        disponibilidad.setDiaSemana(
-                disponibilidadModificar.getDiaSemana()
-        );
-        disponibilidad.setHoraInicio(
-                disponibilidadModificar.getHoraInicio()
-        );
-        disponibilidad.setHoraFin(
-                disponibilidadModificar.getHoraFin()
-        );
+        if (disponibilidadModificar.getDiaSemana() != null) {
+            disponibilidad.setDiaSemana(diaSemana);
+        }
+
+        if (disponibilidadModificar.getHoraInicio() != null) {
+            disponibilidad.setHoraInicio(horaInicio);
+        }
+
+        if (disponibilidadModificar.getHoraFin() != null) {
+            disponibilidad.setHoraFin(horaFin);
+        }
 
         DisponibilidadServicio actualizada =
                 disponibilidadRepository.save(disponibilidad);

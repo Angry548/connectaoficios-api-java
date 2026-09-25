@@ -26,8 +26,11 @@ public class TransaccionPagoController {
 
     private final ITransaccionPagoService transaccionPagoService;
 
-    public TransaccionPagoController(ITransaccionPagoService transaccionPagoService) {
-        this.transaccionPagoService = transaccionPagoService;
+    public TransaccionPagoController(
+            ITransaccionPagoService transaccionPagoService
+    ) {
+        this.transaccionPagoService =
+                transaccionPagoService;
     }
 
     @PostMapping
@@ -36,75 +39,155 @@ public class TransaccionPagoController {
             @Valid @RequestBody TransaccionPagoGuardar dto,
             JwtAuthenticationToken authentication
     ) {
-        Integer trabajadorId = obtenerIdDeUsuario(authentication.getToken());
-        TransaccionPagoSalida transaccion = transaccionPagoService.guardar(dto, trabajadorId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(transaccion);
+
+        Integer trabajadorId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
+
+        TransaccionPagoSalida transaccion =
+                transaccionPagoService.guardar(
+                        dto,
+                        trabajadorId
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(transaccion);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<Page<TransaccionPagoSalida>> obtenerTodosPaginados(Pageable pageable) {
-        return ResponseEntity.ok(transaccionPagoService.obtenerTodosPaginados(pageable));
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<Page<TransaccionPagoSalida>>
+    obtenerTodosPaginados(Pageable pageable) {
+
+        return ResponseEntity.ok(
+                transaccionPagoService
+                        .obtenerTodosPaginados(pageable)
+        );
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<TransaccionPagoSalida> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(transaccionPagoService.obtenerPorId(id));
+    public ResponseEntity<TransaccionPagoSalida> obtenerPorId(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                transaccionPagoService.obtenerPorId(id)
+        );
     }
 
     @GetMapping("/estado/{estado}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<Page<TransaccionPagoSalida>> obtenerPorEstado(
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<Page<TransaccionPagoSalida>>
+    obtenerPorEstado(
             @PathVariable EstadoTransaccion estado,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(transaccionPagoService.obtenerPorEstado(estado, pageable));
+
+        return ResponseEntity.ok(
+                transaccionPagoService
+                        .obtenerPorEstado(
+                                estado,
+                                pageable
+                        )
+        );
     }
 
     @GetMapping("/promocion/{promocionId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<TransaccionPagoSalida>> obtenerPorPromocion(
+    public ResponseEntity<List<TransaccionPagoSalida>>
+    obtenerPorPromocion(
             @PathVariable Long promocionId
     ) {
-        return ResponseEntity.ok(transaccionPagoService.obtenerPorPromocion(promocionId));
+
+        return ResponseEntity.ok(
+                transaccionPagoService
+                        .obtenerPorPromocion(promocionId)
+        );
     }
 
     @GetMapping("/mis-transacciones")
     @PreAuthorize("hasRole('TRABAJADOR')")
-    public ResponseEntity<List<TransaccionPagoSalida>> obtenerMisTransacciones(
+    public ResponseEntity<List<TransaccionPagoSalida>>
+    obtenerMisTransacciones(
             JwtAuthenticationToken authentication
     ) {
-        Integer trabajadorId = obtenerIdDeUsuario(authentication.getToken());
-        return ResponseEntity.ok(transaccionPagoService.obtenerPorTrabajador(trabajadorId));
+
+        Integer trabajadorId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
+
+        return ResponseEntity.ok(
+                transaccionPagoService
+                        .obtenerPorTrabajador(trabajadorId)
+        );
     }
 
     @PutMapping("/{id}/aprobar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
     public ResponseEntity<TransaccionPagoSalida> aprobar(
             @PathVariable Long id,
             @Valid @RequestBody TransaccionPagoAprobar dto
     ) {
-        return ResponseEntity.ok(transaccionPagoService.aprobar(id, dto));
+
+        return ResponseEntity.ok(
+                transaccionPagoService.aprobar(id, dto)
+        );
     }
 
     @PutMapping("/{id}/rechazar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<TransaccionPagoSalida> rechazar(@PathVariable Long id) {
-        return ResponseEntity.ok(transaccionPagoService.rechazar(id));
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<TransaccionPagoSalida> rechazar(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                transaccionPagoService.rechazar(id)
+        );
     }
 
     @PutMapping("/{id}/cancelar")
     @PreAuthorize("hasRole('TRABAJADOR')")
-    public ResponseEntity<TransaccionPagoSalida> cancelar(@PathVariable Long id) {
-        return ResponseEntity.ok(transaccionPagoService.cancelar(id));
+    public ResponseEntity<TransaccionPagoSalida> cancelar(
+            @PathVariable Long id,
+            JwtAuthenticationToken authentication
+    ) {
+
+        Integer trabajadorId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
+
+        return ResponseEntity.ok(
+                transaccionPagoService.cancelar(
+                        id,
+                        trabajadorId
+                )
+        );
     }
 
     private Integer obtenerIdDeUsuario(Jwt jwt) {
-        String id = jwt.getClaimAsString(CLAIM_NAME_IDENTIFIER);
+
+        String id =
+                jwt.getClaimAsString(
+                        CLAIM_NAME_IDENTIFIER
+                );
+
         if (id == null || id.isBlank()) {
             id = jwt.getSubject();
         }
+
         return Integer.valueOf(id);
     }
 }

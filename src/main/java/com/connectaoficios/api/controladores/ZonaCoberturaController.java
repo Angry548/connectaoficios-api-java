@@ -25,7 +25,7 @@ public class ZonaCoberturaController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ZonaCoberturaSalida> guardar(
             @Valid @RequestBody ZonaCoberturaGuardar zonaGuardar
     ) {
@@ -49,7 +49,7 @@ public class ZonaCoberturaController {
     }
 
     @GetMapping("/todas")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<ZonaCoberturaSalida>> listarTodas() {
 
         List<ZonaCoberturaSalida> zonas =
@@ -97,7 +97,7 @@ public class ZonaCoberturaController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<ZonaCoberturaSalida> modificar(
             @PathVariable Long id,
             @Valid @RequestBody ZonaCoberturaModificar zonaModificar
@@ -110,7 +110,7 @@ public class ZonaCoberturaController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Void> eliminar(
             @PathVariable Long id
     ) {

@@ -51,12 +51,25 @@ public class CategoriaService implements ICategoriaService {
 
         Categoria categoria = buscarCategoria(id);
 
-        String nombre = categoriaModificar.getNombre().trim();
+        if (categoriaModificar.getNombre() != null) {
 
-        validarNombreUnico(nombre, id);
+            String nombre = categoriaModificar.getNombre().trim();
 
-        categoria.setNombre(nombre);
-        categoria.setDescripcion(categoriaModificar.getDescripcion());
+            if (nombre.isBlank()) {
+                throw new ReglaNegocioException(
+                        "El nombre de la categoría no puede estar vacío"
+                );
+            }
+
+            validarNombreUnico(nombre, id);
+            categoria.setNombre(nombre);
+        }
+
+        if (categoriaModificar.getDescripcion() != null) {
+            categoria.setDescripcion(
+                    categoriaModificar.getDescripcion().trim()
+            );
+        }
 
         Categoria categoriaActualizada =
                 categoriaRepository.save(categoria);

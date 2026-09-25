@@ -48,6 +48,7 @@ class TransaccionPagoServiceTest {
     private TransaccionPago transaccion;
 
     private static final Integer TRABAJADOR_ID = 10;
+    private static final Integer OTRO_TRABAJADOR_ID = 999;
 
     @BeforeEach
     void setUp() {
@@ -85,45 +86,81 @@ class TransaccionPagoServiceTest {
     @Test
     void guardar_debeCrearTransaccionPendienteCuandoTodoEsValido() {
 
-        TransaccionPagoGuardar dto = new TransaccionPagoGuardar();
-        dto.setPromocionId(1L);
-        dto.setMonto(new BigDecimal("5.00"));
-        dto.setMoneda("USD");
+        TransaccionPagoGuardar dto = crearDtoValido();
 
-        when(promocionRepository.findById(1L)).thenReturn(Optional.of(promocion));
-        when(transaccionPagoRepository.existsByPromocion_IdAndEstadoIn(eq(1L), anyList()))
+        when(promocionRepository.findById(1L))
+                .thenReturn(Optional.of(promocion));
+
+        when(transaccionPagoRepository
+                .existsByPromocion_IdAndEstadoIn(eq(1L), anyList()))
                 .thenReturn(false);
-        when(transaccionPagoRepository.save(any(TransaccionPago.class))).thenAnswer(invocation -> {
-            TransaccionPago guardada = invocation.getArgument(0);
-            guardada.setId(1L);
-            return guardada;
-        });
 
-        TransaccionPagoSalida resultado = transaccionPagoService.guardar(dto, TRABAJADOR_ID);
+        when(transaccionPagoRepository.save(any(TransaccionPago.class)))
+                .thenAnswer(invocation -> {
+                    TransaccionPago guardada = invocation.getArgument(0);
+                    guardada.setId(1L);
+                    return guardada;
+                });
 
+        TransaccionPagoSalida resultado =
+                transaccionPagoService.guardar(dto, TRABAJADOR_ID);
+
+        assertNotNull(resultado);
         assertEquals(EstadoTransaccion.PENDIENTE, resultado.getEstado());
-        assertEquals(new BigDecimal("5.00"), resultado.getMonto());
+        assertEquals(0, new BigDecimal("5.00").compareTo(resultado.getMonto()));
+        assertEquals("USD", resultado.getMoneda());
+        assertEquals(1L, resultado.getPromocionId());
         assertEquals(1L, resultado.getServicioId());
+        assertEquals(TRABAJADOR_ID, resultado.getTrabajadorId());
 
-        verify(transaccionPagoRepository, times(1)).save(any(TransaccionPago.class));
+        verify(transaccionPagoRepository, times(1))
+                .save(any(TransaccionPago.class));
+    }
+
+    @Test
+    void guardar_debeNormalizarMonedaAMayusculas() {
+
+        TransaccionPagoGuardar dto = crearDtoValido();
+        dto.setMoneda("usd");
+
+        when(promocionRepository.findById(1L))
+                .thenReturn(Optional.of(promocion));
+
+        when(transaccionPagoRepository
+                .existsByPromocion_IdAndEstadoIn(eq(1L), anyList()))
+                .thenReturn(false);
+
+        when(transaccionPagoRepository.save(any(TransaccionPago.class)))
+                .thenAnswer(invocation -> {
+                    TransaccionPago guardada = invocation.getArgument(0);
+                    guardada.setId(1L);
+                    return guardada;
+                });
+
+        TransaccionPagoSalida resultado =
+                transaccionPagoService.guardar(dto, TRABAJADOR_ID);
+
+        assertEquals("USD", resultado.getMoneda());
     }
 
     @Test
     void guardar_debeLanzarExcepcionCuandoPromocionNoPerteneceAlTrabajador() {
 
-        TransaccionPagoGuardar dto = new TransaccionPagoGuardar();
-        dto.setPromocionId(1L);
-        dto.setMonto(new BigDecimal("5.00"));
-        dto.setMoneda("USD");
+        TransaccionPagoGuardar dto = crearDtoValido();
 
-        when(promocionRepository.findById(1L)).thenReturn(Optional.of(promocion));
+        when(promocionRepository.findById(1L))
+                .thenReturn(Optional.of(promocion));
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> transaccionPagoService.guardar(dto, 999)
+                () -> transaccionPagoService.guardar(
+                        dto,
+                        OTRO_TRABAJADOR_ID
+                )
         );
 
-        verify(transaccionPagoRepository, never()).save(any(TransaccionPago.class));
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
     }
 
     @Test
@@ -131,124 +168,277 @@ class TransaccionPagoServiceTest {
 
         promocion.setEstado(EstadoPromocion.ACTIVA);
 
-        TransaccionPagoGuardar dto = new TransaccionPagoGuardar();
-        dto.setPromocionId(1L);
-        dto.setMonto(new BigDecimal("5.00"));
-        dto.setMoneda("USD");
+        TransaccionPagoGuardar dto = crearDtoValido();
 
-        when(promocionRepository.findById(1L)).thenReturn(Optional.of(promocion));
+        when(promocionRepository.findById(1L))
+                .thenReturn(Optional.of(promocion));
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> transaccionPagoService.guardar(dto, TRABAJADOR_ID)
+                () -> transaccionPagoService.guardar(
+                        dto,
+                        TRABAJADOR_ID
+                )
         );
 
-        verify(transaccionPagoRepository, never()).save(any(TransaccionPago.class));
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
     }
 
     @Test
     void guardar_debeLanzarExcepcionCuandoYaExisteTransaccionPendienteOAprobada() {
 
-        TransaccionPagoGuardar dto = new TransaccionPagoGuardar();
-        dto.setPromocionId(1L);
-        dto.setMonto(new BigDecimal("5.00"));
-        dto.setMoneda("USD");
+        TransaccionPagoGuardar dto = crearDtoValido();
 
-        when(promocionRepository.findById(1L)).thenReturn(Optional.of(promocion));
-        when(transaccionPagoRepository.existsByPromocion_IdAndEstadoIn(eq(1L), anyList()))
+        when(promocionRepository.findById(1L))
+                .thenReturn(Optional.of(promocion));
+
+        when(transaccionPagoRepository
+                .existsByPromocion_IdAndEstadoIn(eq(1L), anyList()))
                 .thenReturn(true);
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> transaccionPagoService.guardar(dto, TRABAJADOR_ID)
+                () -> transaccionPagoService.guardar(
+                        dto,
+                        TRABAJADOR_ID
+                )
         );
 
-        verify(transaccionPagoRepository, never()).save(any(TransaccionPago.class));
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
+    }
+
+    @Test
+    void guardar_debeLanzarExcepcionCuandoMontoNoCoincideConPrecioDelPlan() {
+
+        TransaccionPagoGuardar dto = crearDtoValido();
+
+        dto.setMonto(new BigDecimal("1.00"));
+
+        when(promocionRepository.findById(1L))
+                .thenReturn(Optional.of(promocion));
+
+        when(transaccionPagoRepository
+                .existsByPromocion_IdAndEstadoIn(eq(1L), anyList()))
+                .thenReturn(false);
+
+        ReglaNegocioException excepcion =
+                assertThrows(
+                        ReglaNegocioException.class,
+                        () -> transaccionPagoService.guardar(
+                                dto,
+                                TRABAJADOR_ID
+                        )
+                );
+
+        assertTrue(
+                excepcion.getMessage()
+                        .contains("no coincide")
+        );
+
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
     }
 
     @Test
     void aprobar_debeCambiarEstadoAAprobadaYActivarLaPromocion() {
 
-        TransaccionPagoAprobar dto = new TransaccionPagoAprobar();
+        TransaccionPagoAprobar dto =
+                new TransaccionPagoAprobar();
+
         dto.setReferenciaExterna("REF-12345");
 
-        when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion));
-        when(transaccionPagoRepository.save(transaccion)).thenReturn(transaccion);
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
 
-        TransaccionPagoSalida resultado = transaccionPagoService.aprobar(1L, dto);
+        when(transaccionPagoRepository.save(transaccion))
+                .thenReturn(transaccion);
 
-        assertEquals(EstadoTransaccion.APROBADA, resultado.getEstado());
-        assertEquals("REF-12345", resultado.getReferenciaExterna());
+        TransaccionPagoSalida resultado =
+                transaccionPagoService.aprobar(1L, dto);
 
-        verify(promocionService, times(1)).activar(1L);
+        assertEquals(
+                EstadoTransaccion.APROBADA,
+                resultado.getEstado()
+        );
+
+        assertEquals(
+                "REF-12345",
+                resultado.getReferenciaExterna()
+        );
+
+        verify(promocionService, times(1))
+                .activar(1L);
     }
 
     @Test
     void aprobar_debeLanzarExcepcionCuandoNoEstaPendiente() {
 
-        transaccion.setEstado(EstadoTransaccion.APROBADA);
+        transaccion.setEstado(
+                EstadoTransaccion.APROBADA
+        );
 
-        TransaccionPagoAprobar dto = new TransaccionPagoAprobar();
+        TransaccionPagoAprobar dto =
+                new TransaccionPagoAprobar();
+
         dto.setReferenciaExterna("REF-12345");
 
-        when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion));
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> transaccionPagoService.aprobar(1L, dto)
+                () -> transaccionPagoService.aprobar(
+                        1L,
+                        dto
+                )
         );
 
-        verify(promocionService, never()).activar(any());
-        verify(transaccionPagoRepository, never()).save(any(TransaccionPago.class));
+        verify(promocionService, never())
+                .activar(any());
+
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
     }
 
     @Test
     void rechazar_debeCambiarEstadoARechazadaYCancelarLaPromocion() {
 
-        when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion));
-        when(transaccionPagoRepository.save(transaccion)).thenReturn(transaccion);
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
 
-        TransaccionPagoSalida resultado = transaccionPagoService.rechazar(1L);
+        when(transaccionPagoRepository.save(transaccion))
+                .thenReturn(transaccion);
 
-        assertEquals(EstadoTransaccion.RECHAZADA, resultado.getEstado());
-        verify(promocionService, times(1)).cancelar(1L);
+        TransaccionPagoSalida resultado =
+                transaccionPagoService.rechazar(1L);
+
+        assertEquals(
+                EstadoTransaccion.RECHAZADA,
+                resultado.getEstado()
+        );
+
+        verify(promocionService, times(1))
+                .cancelar(1L);
     }
 
     @Test
     void rechazar_debeLanzarExcepcionCuandoNoEstaPendiente() {
 
-        transaccion.setEstado(EstadoTransaccion.RECHAZADA);
+        transaccion.setEstado(
+                EstadoTransaccion.RECHAZADA
+        );
 
-        when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion));
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
 
         assertThrows(
                 ReglaNegocioException.class,
                 () -> transaccionPagoService.rechazar(1L)
         );
 
-        verify(promocionService, never()).cancelar(any());
+        verify(promocionService, never())
+                .cancelar(any());
+
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
     }
 
     @Test
-    void cancelar_debeCambiarEstadoACanceladaSinTocarLaPromocion() {
+    void cancelar_debeCambiarEstadoACanceladaYCancelarLaPromocion() {
 
-        when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion));
-        when(transaccionPagoRepository.save(transaccion)).thenReturn(transaccion);
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
 
-        TransaccionPagoSalida resultado = transaccionPagoService.cancelar(1L);
+        when(transaccionPagoRepository.save(transaccion))
+                .thenReturn(transaccion);
 
-        assertEquals(EstadoTransaccion.CANCELADA, resultado.getEstado());
-        verifyNoInteractions(promocionService);
+        TransaccionPagoSalida resultado =
+                transaccionPagoService.cancelar(
+                        1L,
+                        TRABAJADOR_ID
+                );
+
+        assertEquals(
+                EstadoTransaccion.CANCELADA,
+                resultado.getEstado()
+        );
+
+        verify(promocionService, times(1))
+                .cancelar(1L);
+
+        verify(transaccionPagoRepository, times(1))
+                .save(transaccion);
+    }
+
+    @Test
+    void cancelar_debeLanzarExcepcionCuandoNoPerteneceAlTrabajador() {
+
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
+
+        assertThrows(
+                ReglaNegocioException.class,
+                () -> transaccionPagoService.cancelar(
+                        1L,
+                        OTRO_TRABAJADOR_ID
+                )
+        );
+
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
+
+        verify(promocionService, never())
+                .cancelar(any());
+    }
+
+    @Test
+    void cancelar_debeLanzarExcepcionCuandoTransaccionNoEstaPendiente() {
+
+        transaccion.setEstado(
+                EstadoTransaccion.APROBADA
+        );
+
+        when(transaccionPagoRepository.findById(1L))
+                .thenReturn(Optional.of(transaccion));
+
+        assertThrows(
+                ReglaNegocioException.class,
+                () -> transaccionPagoService.cancelar(
+                        1L,
+                        TRABAJADOR_ID
+                )
+        );
+
+        verify(transaccionPagoRepository, never())
+                .save(any(TransaccionPago.class));
+
+        verify(promocionService, never())
+                .cancelar(any());
     }
 
     @Test
     void obtenerPorId_debeLanzarExcepcionCuandoNoExiste() {
 
-        when(transaccionPagoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(transaccionPagoRepository.findById(99L))
+                .thenReturn(Optional.empty());
 
         assertThrows(
                 RecursoNoEncontradoException.class,
                 () -> transaccionPagoService.obtenerPorId(99L)
         );
+    }
+
+    private TransaccionPagoGuardar crearDtoValido() {
+
+        TransaccionPagoGuardar dto =
+                new TransaccionPagoGuardar();
+
+        dto.setPromocionId(1L);
+        dto.setMonto(new BigDecimal("5.00"));
+        dto.setMoneda("USD");
+
+        return dto;
     }
 }

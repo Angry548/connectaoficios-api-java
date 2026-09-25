@@ -10,6 +10,7 @@ import com.connectaoficios.api.modelos.Mensaje;
 import com.connectaoficios.api.modelos.SolicitudServicio;
 import com.connectaoficios.api.repositorios.IConversacionRepository;
 import com.connectaoficios.api.repositorios.IMensajeRepository;
+import com.connectaoficios.api.servicios.interfaces.IChatTiempoRealService;
 import com.connectaoficios.api.servicios.interfaces.IMensajeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

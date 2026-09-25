@@ -36,14 +36,14 @@ public class SolicitudServicioController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerTodas() {
         List<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerTodas();
         return ResponseEntity.ok(solicitudes);
     }
 
     @GetMapping("/paginadas")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Page<SolicitudServicioRespuesta>> obtenerTodasPaginadas(Pageable pageable) {
         Page<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerTodasPaginadas(pageable);
         return ResponseEntity.ok(solicitudes);
@@ -57,14 +57,14 @@ public class SolicitudServicioController {
     }
 
     @GetMapping("/cliente/{clienteId}")
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorCliente(@PathVariable Integer clienteId) {
         List<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerPorCliente(clienteId);
         return ResponseEntity.ok(solicitudes);
     }
 
     @GetMapping("/trabajador/{trabajadorId}")
-    @PreAuthorize("hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorTrabajador(@PathVariable Integer trabajadorId) {
         List<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerPorTrabajador(trabajadorId);
         return ResponseEntity.ok(solicitudes);
@@ -109,7 +109,7 @@ public class SolicitudServicioController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADOR PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         solicitudServicioService.eliminar(id);
         return ResponseEntity.noContent().build();

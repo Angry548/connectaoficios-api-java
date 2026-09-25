@@ -57,14 +57,27 @@ public class ZonaCoberturaService implements IZonaCoberturaService {
 
         ZonaCobertura zona = buscarZona(id);
 
-        String departamento = zonaModificar.getDepartamento().trim();
-        String municipio = zonaModificar.getMunicipio().trim();
+        String departamento = zonaModificar.getDepartamento() != null
+                ? zonaModificar.getDepartamento().trim()
+                : zona.getDepartamento();
+
+        String municipio = zonaModificar.getMunicipio() != null
+                ? zonaModificar.getMunicipio().trim()
+                : zona.getMunicipio();
 
         validarDuplicado(departamento, municipio, id);
 
-        zona.setDepartamento(departamento);
-        zona.setMunicipio(municipio);
-        zona.setLocalidad(zonaModificar.getLocalidad());
+        if (zonaModificar.getDepartamento() != null) {
+            zona.setDepartamento(departamento);
+        }
+
+        if (zonaModificar.getMunicipio() != null) {
+            zona.setMunicipio(municipio);
+        }
+
+        if (zonaModificar.getLocalidad() != null) {
+            zona.setLocalidad(zonaModificar.getLocalidad().trim());
+        }
 
         ZonaCobertura zonaActualizada = zonaRepository.save(zona);
 
