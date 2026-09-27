@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.resena.ResenaFiltroDTO;
 import com.connectaoficios.api.dtos.resena.ResenaGuardar;
 import com.connectaoficios.api.dtos.resena.ResenaSalida;
 
@@ -16,5 +18,11 @@ public interface IResenaService {
 
     List<ResenaSalida> obtenerPorPerfilTrabajador(
             Long perfilTrabajadorId
+    );
+
+    PaginaSalida<ResenaSalida> buscarConFiltros(
+            ResenaFiltroDTO filtro,
+            int pagina,
+            int tamanio
     );
 }

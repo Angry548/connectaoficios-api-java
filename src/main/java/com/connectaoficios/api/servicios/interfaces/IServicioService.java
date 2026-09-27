@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.servicio.ServicioBusquedaSalida;
 import com.connectaoficios.api.dtos.servicio.ServicioCambiarEstado;
 import com.connectaoficios.api.dtos.servicio.ServicioFiltroDTO;
 import com.connectaoficios.api.dtos.servicio.ServicioGuardar;
@@ -35,4 +37,38 @@ public interface IServicioService {
     List<ServicioSalida> buscarPorZona(Long zonaId);
 
     List<ServicioSalida> buscarConFiltros(ServicioFiltroDTO filtro);
+
+    PaginaSalida<ServicioSalida> listarActivosPaginado(
+            int pagina,
+            int tamanio
+    );
+
+    PaginaSalida<ServicioSalida> listarPorCategoriaPaginado(
+            Long categoriaId,
+            int pagina,
+            int tamanio
+    );
+
+    PaginaSalida<ServicioSalida> listarPorTrabajadorPaginado(
+            Long perfilTrabajadorId,
+            int pagina,
+            int tamanio
+    );
+
+    PaginaSalida<ServicioSalida> buscarPorZonaPaginado(
+            Long zonaId,
+            int pagina,
+            int tamanio
+    );
+
+    PaginaSalida<ServicioSalida> buscarConFiltrosPaginado(
+            ServicioFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    );
+
+    List<ServicioBusquedaSalida> buscarParaAutocomplete(
+            String texto,
+            int limite
+    );
 }

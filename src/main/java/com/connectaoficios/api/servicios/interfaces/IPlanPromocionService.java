@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.planpromocion.PlanPromocionFiltroDTO;
 import com.connectaoficios.api.dtos.planpromocion.PlanPromocionGuardar;
 import com.connectaoficios.api.dtos.planpromocion.PlanPromocionModificar;
 import com.connectaoficios.api.dtos.planpromocion.PlanPromocionSalida;
@@ -13,21 +15,47 @@ public interface IPlanPromocionService {
 
     List<PlanPromocionSalida> obtenerTodos();
 
-    Page<PlanPromocionSalida> obtenerTodosPaginados(Pageable pageable);
+    Page<PlanPromocionSalida> obtenerTodosPaginados(
+            Pageable pageable
+    );
 
-    Page<PlanPromocionSalida> obtenerActivos(Pageable pageable);
+    Page<PlanPromocionSalida> obtenerActivos(
+            Pageable pageable
+    );
 
-    PlanPromocionSalida obtenerPorId(Long id);
+    PaginaSalida<PlanPromocionSalida> buscarConFiltros(
+            PlanPromocionFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    );
 
-    PlanPromocionSalida guardar(PlanPromocionGuardar dto);
+    PlanPromocionSalida obtenerPorId(
+            Long id
+    );
 
-    PlanPromocionSalida modificar(Long id, PlanPromocionModificar dto);
+    PlanPromocionSalida guardar(
+            PlanPromocionGuardar dto
+    );
 
-    PlanPromocionSalida activar(Long id);
+    PlanPromocionSalida modificar(
+            Long id,
+            PlanPromocionModificar dto
+    );
 
-    PlanPromocionSalida desactivar(Long id);
+    PlanPromocionSalida activar(
+            Long id
+    );
 
-    void eliminar(Long id);
+    PlanPromocionSalida desactivar(
+            Long id
+    );
 
-    LocalDateTime calcularFechaFin(Long id, LocalDateTime fechaInicio);
+    void eliminar(
+            Long id
+    );
+
+    LocalDateTime calcularFechaFin(
+            Long id,
+            LocalDateTime fechaInicio
+    );
 }

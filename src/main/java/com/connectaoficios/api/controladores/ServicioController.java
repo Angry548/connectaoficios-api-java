@@ -1,10 +1,14 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.servicio.ServicioBusquedaSalida;
 import com.connectaoficios.api.dtos.servicio.ServicioCambiarEstado;
 import com.connectaoficios.api.dtos.servicio.ServicioFiltroDTO;
 import com.connectaoficios.api.dtos.servicio.ServicioGuardar;
 import com.connectaoficios.api.dtos.servicio.ServicioModificar;
 import com.connectaoficios.api.dtos.servicio.ServicioSalida;
+import com.connectaoficios.api.enums.DiaSemana;
+import com.connectaoficios.api.enums.EstadoServicio;
 import com.connectaoficios.api.servicios.interfaces.IServicioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -12,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -20,7 +25,9 @@ public class ServicioController {
 
     private final IServicioService servicioService;
 
-    public ServicioController(IServicioService servicioService) {
+    public ServicioController(
+            IServicioService servicioService
+    ) {
         this.servicioService = servicioService;
     }
 
@@ -31,7 +38,9 @@ public class ServicioController {
     ) {
 
         ServicioSalida servicio =
-                servicioService.publicar(servicioGuardar);
+                servicioService.publicar(
+                        servicioGuardar
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -40,50 +49,113 @@ public class ServicioController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ServicioSalida>> listarActivos() {
+    public ResponseEntity<PaginaSalida<ServicioSalida>> listar(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) Long perfilTrabajadorId,
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) Long zonaId,
+            @RequestParam(required = false) DiaSemana diaSemana,
+            @RequestParam(required = false) EstadoServicio estado,
+            @RequestParam(required = false) BigDecimal tarifaMinima,
+            @RequestParam(required = false) BigDecimal tarifaMaxima,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
 
-        List<ServicioSalida> servicios =
-                servicioService.listarActivos();
+        ServicioFiltroDTO filtro =
+                new ServicioFiltroDTO();
 
-        return ResponseEntity.ok(servicios);
+        filtro.setTexto(texto);
+        filtro.setPerfilTrabajadorId(perfilTrabajadorId);
+        filtro.setCategoriaId(categoriaId);
+        filtro.setZonaId(zonaId);
+        filtro.setDiaSemana(diaSemana);
+        filtro.setEstado(
+                estado != null
+                        ? estado
+                        : EstadoServicio.ACTIVO
+        );
+        filtro.setTarifaMinima(tarifaMinima);
+        filtro.setTarifaMaxima(tarifaMaxima);
+
+        return ResponseEntity.ok(
+                servicioService
+                        .buscarConFiltrosPaginado(
+                                filtro,
+                                page,
+                                size
+                        )
+        );
+    }
+
+    @GetMapping("/buscar")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ServicioBusquedaSalida>> buscar(
+            @RequestParam String texto,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+
+        return ResponseEntity.ok(
+                servicioService
+                        .buscarParaAutocomplete(
+                                texto,
+                                limit
+                        )
+        );
     }
 
     @GetMapping("/trabajador/{perfilTrabajadorId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ServicioSalida>> listarPorTrabajador(
-            @PathVariable Long perfilTrabajadorId
+    public ResponseEntity<PaginaSalida<ServicioSalida>> listarPorTrabajador(
+            @PathVariable Long perfilTrabajadorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
 
-        List<ServicioSalida> servicios =
+        return ResponseEntity.ok(
                 servicioService
-                        .listarPorTrabajador(perfilTrabajadorId);
-
-        return ResponseEntity.ok(servicios);
+                        .listarPorTrabajadorPaginado(
+                                perfilTrabajadorId,
+                                page,
+                                size
+                        )
+        );
     }
 
     @GetMapping("/categoria/{categoriaId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ServicioSalida>> listarPorCategoria(
-            @PathVariable Long categoriaId
+    public ResponseEntity<PaginaSalida<ServicioSalida>> listarPorCategoria(
+            @PathVariable Long categoriaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
 
-        List<ServicioSalida> servicios =
+        return ResponseEntity.ok(
                 servicioService
-                        .listarPorCategoria(categoriaId);
-
-        return ResponseEntity.ok(servicios);
+                        .listarPorCategoriaPaginado(
+                                categoriaId,
+                                page,
+                                size
+                        )
+        );
     }
 
     @GetMapping("/zona/{zonaId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ServicioSalida>> buscarPorZona(
-            @PathVariable Long zonaId
+    public ResponseEntity<PaginaSalida<ServicioSalida>> buscarPorZona(
+            @PathVariable Long zonaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
 
-        List<ServicioSalida> servicios =
-                servicioService.buscarPorZona(zonaId);
-
-        return ResponseEntity.ok(servicios);
+        return ResponseEntity.ok(
+                servicioService
+                        .buscarPorZonaPaginado(
+                                zonaId,
+                                page,
+                                size
+                        )
+        );
     }
 
     @PostMapping("/filtros")
@@ -92,10 +164,10 @@ public class ServicioController {
             @RequestBody ServicioFiltroDTO filtro
     ) {
 
-        List<ServicioSalida> servicios =
-                servicioService.buscarConFiltros(filtro);
-
-        return ResponseEntity.ok(servicios);
+        return ResponseEntity.ok(
+                servicioService
+                        .buscarConFiltros(filtro)
+        );
     }
 
     @GetMapping("/{id}")
@@ -118,7 +190,10 @@ public class ServicioController {
     ) {
 
         ServicioSalida servicio =
-                servicioService.modificar(id, servicioModificar);
+                servicioService.modificar(
+                        id,
+                        servicioModificar
+                );
 
         return ResponseEntity.ok(servicio);
     }
@@ -147,6 +222,8 @@ public class ServicioController {
 
         servicioService.eliminar(id);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.reporte.ReporteFiltroDTO;
 import com.connectaoficios.api.dtos.reporte.ReporteGuardar;
 import com.connectaoficios.api.dtos.reporte.ReporteRechazo;
 import com.connectaoficios.api.dtos.reporte.ReporteResolucion;
@@ -15,23 +17,55 @@ public interface IReporteService {
 
     List<ReporteSalida> obtenerTodos();
 
-    Page<ReporteSalida> obtenerTodosPaginados(Pageable pageable);
+    Page<ReporteSalida> obtenerTodosPaginados(
+            Pageable pageable
+    );
 
-    ReporteSalida obtenerPorId(Long id);
+    ReporteSalida obtenerPorId(
+            Long id
+    );
 
-    Page<ReporteSalida> obtenerPorEstado(EstadoReporte estado, Pageable pageable);
+    Page<ReporteSalida> obtenerPorEstado(
+            EstadoReporte estado,
+            Pageable pageable
+    );
 
-    Page<ReporteSalida> obtenerPorTipo(TipoReporte tipo, Pageable pageable);
+    Page<ReporteSalida> obtenerPorTipo(
+            TipoReporte tipo,
+            Pageable pageable
+    );
 
-    List<ReporteSalida> obtenerPorUsuarioReportante(Integer usuarioReportanteId);
+    List<ReporteSalida> obtenerPorUsuarioReportante(
+            Integer usuarioReportanteId
+    );
 
-    List<ReporteSalida> obtenerPorUsuarioReportado(Integer usuarioReportadoId);
+    List<ReporteSalida> obtenerPorUsuarioReportado(
+            Integer usuarioReportadoId
+    );
 
-    ReporteSalida guardar(ReporteGuardar dto);
+    PaginaSalida<ReporteSalida> buscarConFiltros(
+            ReporteFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    );
 
-    ReporteSalida iniciarRevision(Long id);
+    ReporteSalida guardar(
+            ReporteGuardar dto
+    );
 
-    ReporteSalida resolver(Long id, ReporteResolucion dto, Integer administradorId);
+    ReporteSalida iniciarRevision(
+            Long id
+    );
 
-    ReporteSalida rechazar(Long id, ReporteRechazo dto, Integer administradorId);
+    ReporteSalida resolver(
+            Long id,
+            ReporteResolucion dto,
+            Integer administradorId
+    );
+
+    ReporteSalida rechazar(
+            Long id,
+            ReporteRechazo dto,
+            Integer administradorId
+    );
 }

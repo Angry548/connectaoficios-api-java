@@ -1,6 +1,8 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoAprobar;
+import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoFiltroDTO;
 import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoGuardar;
 import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoSalida;
 import com.connectaoficios.api.enums.EstadoTransaccion;
@@ -13,17 +15,31 @@ public interface ITransaccionPagoService {
 
     List<TransaccionPagoSalida> obtenerTodos();
 
-    Page<TransaccionPagoSalida> obtenerTodosPaginados(Pageable pageable);
+    Page<TransaccionPagoSalida> obtenerTodosPaginados(
+            Pageable pageable
+    );
 
-    TransaccionPagoSalida obtenerPorId(Long id);
+    TransaccionPagoSalida obtenerPorId(
+            Long id
+    );
 
-    List<TransaccionPagoSalida> obtenerPorTrabajador(Integer trabajadorId);
+    List<TransaccionPagoSalida> obtenerPorTrabajador(
+            Integer trabajadorId
+    );
 
-    List<TransaccionPagoSalida> obtenerPorPromocion(Long promocionId);
+    List<TransaccionPagoSalida> obtenerPorPromocion(
+            Long promocionId
+    );
 
     Page<TransaccionPagoSalida> obtenerPorEstado(
             EstadoTransaccion estado,
             Pageable pageable
+    );
+
+    PaginaSalida<TransaccionPagoSalida> buscarConFiltros(
+            TransaccionPagoFiltroDTO filtro,
+            int pagina,
+            int tamanio
     );
 
     TransaccionPagoSalida guardar(
@@ -36,7 +52,9 @@ public interface ITransaccionPagoService {
             TransaccionPagoAprobar dto
     );
 
-    TransaccionPagoSalida rechazar(Long id);
+    TransaccionPagoSalida rechazar(
+            Long id
+    );
 
     TransaccionPagoSalida cancelar(
             Long id,

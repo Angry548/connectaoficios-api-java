@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioFiltroDTO;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioGuardar;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioModificar;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioSalida;
@@ -12,6 +14,10 @@ import com.connectaoficios.api.modelos.Servicio;
 import com.connectaoficios.api.repositorios.IDisponibilidadServicioRepository;
 import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.servicios.interfaces.IDisponibilidadServicioService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +28,8 @@ import java.util.List;
 @Service
 public class DisponibilidadServicioService
         implements IDisponibilidadServicioService {
+
+    private static final int TAMANIO_MAXIMO_PAGINA = 100;
 
     private final IDisponibilidadServicioRepository disponibilidadRepository;
     private final IServicioRepository servicioRepository;
@@ -40,9 +48,11 @@ public class DisponibilidadServicioService
             DisponibilidadServicioGuardar disponibilidadGuardar
     ) {
 
-        Long servicioId = disponibilidadGuardar.getServicioId();
+        Long servicioId =
+                disponibilidadGuardar.getServicioId();
 
-        Servicio servicio = buscarServicioActivo(servicioId);
+        Servicio servicio =
+                buscarServicioActivo(servicioId);
 
         validarHorario(
                 disponibilidadGuardar.getHoraInicio(),
@@ -68,22 +78,34 @@ public class DisponibilidadServicioService
         DisponibilidadServicio disponibilidad =
                 new DisponibilidadServicio();
 
-        disponibilidad.setServicio(servicio);
+        disponibilidad.setServicio(
+                servicio
+        );
+
         disponibilidad.setDiaSemana(
                 disponibilidadGuardar.getDiaSemana()
         );
+
         disponibilidad.setHoraInicio(
                 disponibilidadGuardar.getHoraInicio()
         );
+
         disponibilidad.setHoraFin(
                 disponibilidadGuardar.getHoraFin()
         );
-        disponibilidad.setActivo(true);
+
+        disponibilidad.setActivo(
+                true
+        );
 
         DisponibilidadServicio guardada =
-                disponibilidadRepository.save(disponibilidad);
+                disponibilidadRepository.save(
+                        disponibilidad
+                );
 
-        return convertirASalida(guardada);
+        return convertirASalida(
+                guardada
+        );
     }
 
     @Override
@@ -117,7 +139,9 @@ public class DisponibilidadServicioService
         );
 
         Long servicioId =
-                disponibilidad.getServicio().getId();
+                disponibilidad
+                        .getServicio()
+                        .getId();
 
         validarSinDuplicado(
                 servicioId,
@@ -136,40 +160,63 @@ public class DisponibilidadServicioService
         );
 
         if (disponibilidadModificar.getDiaSemana() != null) {
-            disponibilidad.setDiaSemana(diaSemana);
+
+            disponibilidad.setDiaSemana(
+                    diaSemana
+            );
         }
 
         if (disponibilidadModificar.getHoraInicio() != null) {
-            disponibilidad.setHoraInicio(horaInicio);
+
+            disponibilidad.setHoraInicio(
+                    horaInicio
+            );
         }
 
         if (disponibilidadModificar.getHoraFin() != null) {
-            disponibilidad.setHoraFin(horaFin);
+
+            disponibilidad.setHoraFin(
+                    horaFin
+            );
         }
 
         DisponibilidadServicio actualizada =
-                disponibilidadRepository.save(disponibilidad);
+                disponibilidadRepository.save(
+                        disponibilidad
+                );
 
-        return convertirASalida(actualizada);
+        return convertirASalida(
+                actualizada
+        );
     }
 
     @Override
     @Transactional
-    public void eliminar(Long id) {
+    public void eliminar(
+            Long id
+    ) {
 
         DisponibilidadServicio disponibilidad =
                 buscarDisponibilidad(id);
 
-        disponibilidad.setActivo(false);
+        disponibilidad.setActivo(
+                false
+        );
 
-        disponibilidadRepository.save(disponibilidad);
+        disponibilidadRepository.save(
+                disponibilidad
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public DisponibilidadServicioSalida obtenerPorId(Long id) {
+    public DisponibilidadServicioSalida obtenerPorId(
+            Long id
+    ) {
 
-        return convertirASalida(buscarDisponibilidad(id));
+        return convertirASalida(
+                buscarDisponibilidad(id)
+        );
     }
 
     @Override
@@ -214,28 +261,117 @@ public class DisponibilidadServicioService
         );
     }
 
-    private DisponibilidadServicio buscarDisponibilidad(Long id) {
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<DisponibilidadServicioSalida> buscarConFiltros(
+            DisponibilidadServicioFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    ) {
+
+        validarRangoHorarioFiltro(
+                filtro.getHoraDesde(),
+                filtro.getHoraHasta()
+        );
+
+        Pageable pageable =
+                crearPageable(
+                        pagina,
+                        tamanio
+                );
+
+        Page<DisponibilidadServicioSalida> resultado =
+                disponibilidadRepository
+                        .buscarConFiltros(
+                                filtro.getServicioId(),
+                                filtro.getDiaSemana(),
+                                filtro.getActivo(),
+                                filtro.getHoraDesde(),
+                                filtro.getHoraHasta(),
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(
+                resultado
+        );
+    }
+
+    private Pageable crearPageable(
+            int pagina,
+            int tamanio
+    ) {
+
+        int paginaSegura =
+                Math.max(
+                        pagina,
+                        0
+                );
+
+        int tamanioSeguro =
+                Math.max(
+                        1,
+                        Math.min(
+                                tamanio,
+                                TAMANIO_MAXIMO_PAGINA
+                        )
+                );
+
+        return PageRequest.of(
+                paginaSegura,
+                tamanioSeguro,
+                Sort.by(
+                        Sort.Order.asc("diaSemana"),
+                        Sort.Order.asc("horaInicio")
+                )
+        );
+    }
+
+    private void validarRangoHorarioFiltro(
+            LocalTime horaDesde,
+            LocalTime horaHasta
+    ) {
+
+        if (horaDesde != null
+                && horaHasta != null
+                && horaDesde.isAfter(horaHasta)) {
+
+            throw new ReglaNegocioException(
+                    "La hora inicial del filtro no puede ser posterior a la hora final"
+            );
+        }
+    }
+
+    private DisponibilidadServicio buscarDisponibilidad(
+            Long id
+    ) {
 
         return disponibilidadRepository
                 .findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No se encontró la disponibilidad del servicio"
-                ));
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "No se encontró la disponibilidad del servicio"
+                        )
+                );
     }
 
-    private Servicio buscarServicioActivo(Long id) {
+    private Servicio buscarServicioActivo(
+            Long id
+    ) {
 
-        Servicio servicio = servicioRepository
-                .findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No se encontró el servicio"
-                ));
+        Servicio servicio =
+                servicioRepository
+                        .findByIdAndEliminadoFalse(id)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "No se encontró el servicio"
+                                )
+                        );
 
         if (servicio.getEstado() != EstadoServicio.ACTIVO) {
 
             throw new ReglaNegocioException(
-                    "No se puede asignar disponibilidad "
-                            + "a un servicio inactivo"
+                    "No se puede asignar disponibilidad a un servicio inactivo"
             );
         }
 
@@ -250,8 +386,7 @@ public class DisponibilidadServicioService
         if (!horaFin.isAfter(horaInicio)) {
 
             throw new ReglaNegocioException(
-                    "La hora de fin debe ser posterior "
-                            + "a la hora de inicio"
+                    "La hora de fin debe ser posterior a la hora de inicio"
             );
         }
     }
@@ -267,22 +402,27 @@ public class DisponibilidadServicioService
         boolean existe;
 
         if (idExcluido == null) {
-            existe = disponibilidadRepository
-                    .existsByServicioIdAndDiaSemanaAndHoraInicioAndHoraFin(
-                            servicioId,
-                            diaSemana,
-                            horaInicio,
-                            horaFin
-                    );
+
+            existe =
+                    disponibilidadRepository
+                            .existsByServicioIdAndDiaSemanaAndHoraInicioAndHoraFin(
+                                    servicioId,
+                                    diaSemana,
+                                    horaInicio,
+                                    horaFin
+                            );
+
         } else {
-            existe = disponibilidadRepository
-                    .existsByServicioIdAndDiaSemanaAndHoraInicioAndHoraFinAndIdNot(
-                            servicioId,
-                            diaSemana,
-                            horaInicio,
-                            horaFin,
-                            idExcluido
-                    );
+
+            existe =
+                    disponibilidadRepository
+                            .existsByServicioIdAndDiaSemanaAndHoraInicioAndHoraFinAndIdNot(
+                                    servicioId,
+                                    diaSemana,
+                                    horaInicio,
+                                    horaFin,
+                                    idExcluido
+                            );
         }
 
         if (existe) {
@@ -304,29 +444,33 @@ public class DisponibilidadServicioService
         boolean solapa;
 
         if (idExcluido == null) {
-            solapa = disponibilidadRepository
-                    .existeSolapamiento(
-                            servicioId,
-                            diaSemana,
-                            horaInicio,
-                            horaFin
-                    );
+
+            solapa =
+                    disponibilidadRepository
+                            .existeSolapamiento(
+                                    servicioId,
+                                    diaSemana,
+                                    horaInicio,
+                                    horaFin
+                            );
+
         } else {
-            solapa = disponibilidadRepository
-                    .existeSolapamientoExceptuando(
-                            servicioId,
-                            diaSemana,
-                            horaInicio,
-                            horaFin,
-                            idExcluido
-                    );
+
+            solapa =
+                    disponibilidadRepository
+                            .existeSolapamientoExceptuando(
+                                    servicioId,
+                                    diaSemana,
+                                    horaInicio,
+                                    horaFin,
+                                    idExcluido
+                            );
         }
 
         if (solapa) {
 
             throw new ReglaNegocioException(
-                    "El horario seleccionado se solapa "
-                            + "con otra disponibilidad"
+                    "El horario seleccionado se solapa con otra disponibilidad"
             );
         }
     }
@@ -338,14 +482,31 @@ public class DisponibilidadServicioService
         DisponibilidadServicioSalida salida =
                 new DisponibilidadServicioSalida();
 
-        salida.setId(disponibilidad.getId());
-        salida.setServicioId(
-                disponibilidad.getServicio().getId()
+        salida.setId(
+                disponibilidad.getId()
         );
-        salida.setDiaSemana(disponibilidad.getDiaSemana());
-        salida.setHoraInicio(disponibilidad.getHoraInicio());
-        salida.setHoraFin(disponibilidad.getHoraFin());
-        salida.setActivo(disponibilidad.getActivo());
+
+        salida.setServicioId(
+                disponibilidad
+                        .getServicio()
+                        .getId()
+        );
+
+        salida.setDiaSemana(
+                disponibilidad.getDiaSemana()
+        );
+
+        salida.setHoraInicio(
+                disponibilidad.getHoraInicio()
+        );
+
+        salida.setHoraFin(
+                disponibilidad.getHoraFin()
+        );
+
+        salida.setActivo(
+                disponibilidad.getActivo()
+        );
 
         return salida;
     }
@@ -357,10 +518,13 @@ public class DisponibilidadServicioService
         List<DisponibilidadServicioSalida> lista =
                 new ArrayList<>();
 
-        for (DisponibilidadServicio disponibilidad :
-                disponibilidades) {
+        for (DisponibilidadServicio disponibilidad : disponibilidades) {
 
-            lista.add(convertirASalida(disponibilidad));
+            lista.add(
+                    convertirASalida(
+                            disponibilidad
+                    )
+            );
         }
 
         return lista;

@@ -1,9 +1,12 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.promocion.PromocionFiltroDTO;
 import com.connectaoficios.api.dtos.promocion.PromocionGuardar;
 import com.connectaoficios.api.dtos.promocion.PromocionResumenSalida;
 import com.connectaoficios.api.dtos.promocion.PromocionSalida;
 import com.connectaoficios.api.enums.EstadoPromocion;
+import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.servicios.interfaces.IPromocionService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -15,6 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -26,8 +30,11 @@ public class PromocionController {
 
     private final IPromocionService promocionService;
 
-    public PromocionController(IPromocionService promocionService) {
-        this.promocionService = promocionService;
+    public PromocionController(
+            IPromocionService promocionService
+    ) {
+        this.promocionService =
+                promocionService;
     }
 
     @GetMapping("/resumen")
@@ -36,7 +43,13 @@ public class PromocionController {
             @RequestParam Long servicioId,
             @RequestParam Long planId
     ) {
-        return ResponseEntity.ok(promocionService.obtenerResumen(servicioId, planId));
+
+        return ResponseEntity.ok(
+                promocionService.obtenerResumen(
+                        servicioId,
+                        planId
+                )
+        );
     }
 
     @PostMapping
@@ -45,36 +58,150 @@ public class PromocionController {
             @Valid @RequestBody PromocionGuardar dto,
             JwtAuthenticationToken authentication
     ) {
-        Integer trabajadorId = obtenerIdDeUsuario(authentication.getToken());
-        PromocionSalida promocion = promocionService.guardar(dto, trabajadorId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(promocion);
+
+        Integer trabajadorId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
+
+        PromocionSalida promocion =
+                promocionService.guardar(
+                        dto,
+                        trabajadorId
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(promocion);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<Page<PromocionSalida>> obtenerTodosPaginados(Pageable pageable) {
-        return ResponseEntity.ok(promocionService.obtenerTodosPaginados(pageable));
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<Page<PromocionSalida>> obtenerTodosPaginados(
+            Pageable pageable
+    ) {
+
+        return ResponseEntity.ok(
+                promocionService.obtenerTodosPaginados(
+                        pageable
+                )
+        );
+    }
+
+    @GetMapping("/paginadas")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<PaginaSalida<PromocionSalida>> buscarConFiltros(
+            @RequestParam(required = false) Long servicioId,
+            @RequestParam(required = false) Long planId,
+            @RequestParam(required = false) Integer trabajadorId,
+            @RequestParam(required = false) EstadoPromocion estado,
+            @RequestParam(required = false) LocalDateTime fechaCreacionDesde,
+            @RequestParam(required = false) LocalDateTime fechaCreacionHasta,
+            @RequestParam(required = false) LocalDateTime fechaInicioDesde,
+            @RequestParam(required = false) LocalDateTime fechaInicioHasta,
+            @RequestParam(required = false) LocalDateTime fechaFinDesde,
+            @RequestParam(required = false) LocalDateTime fechaFinHasta,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        PromocionFiltroDTO filtro =
+                new PromocionFiltroDTO();
+
+        filtro.setServicioId(
+                servicioId
+        );
+
+        filtro.setPlanId(
+                planId
+        );
+
+        filtro.setTrabajadorId(
+                trabajadorId
+        );
+
+        filtro.setEstado(
+                estado
+        );
+
+        filtro.setFechaCreacionDesde(
+                fechaCreacionDesde
+        );
+
+        filtro.setFechaCreacionHasta(
+                fechaCreacionHasta
+        );
+
+        filtro.setFechaInicioDesde(
+                fechaInicioDesde
+        );
+
+        filtro.setFechaInicioHasta(
+                fechaInicioHasta
+        );
+
+        filtro.setFechaFinDesde(
+                fechaFinDesde
+        );
+
+        filtro.setFechaFinHasta(
+                fechaFinHasta
+        );
+
+        return ResponseEntity.ok(
+                promocionService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                )
+        );
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PromocionSalida> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(promocionService.obtenerPorId(id));
+    public ResponseEntity<PromocionSalida> obtenerPorId(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                promocionService.obtenerPorId(
+                        id
+                )
+        );
     }
 
     @GetMapping("/estado/{estado}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
     public ResponseEntity<Page<PromocionSalida>> obtenerPorEstado(
             @PathVariable EstadoPromocion estado,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(promocionService.obtenerPorEstado(estado, pageable));
+
+        return ResponseEntity.ok(
+                promocionService.obtenerPorEstado(
+                        estado,
+                        pageable
+                )
+        );
     }
 
     @GetMapping("/servicio/{servicioId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<PromocionSalida>> obtenerPorServicio(@PathVariable Long servicioId) {
-        return ResponseEntity.ok(promocionService.obtenerPorServicio(servicioId));
+    public ResponseEntity<List<PromocionSalida>> obtenerPorServicio(
+            @PathVariable Long servicioId
+    ) {
+
+        return ResponseEntity.ok(
+                promocionService.obtenerPorServicio(
+                        servicioId
+                )
+        );
     }
 
     @GetMapping("/mis-promociones")
@@ -82,27 +209,78 @@ public class PromocionController {
     public ResponseEntity<List<PromocionSalida>> obtenerMisPromociones(
             JwtAuthenticationToken authentication
     ) {
-        Integer trabajadorId = obtenerIdDeUsuario(authentication.getToken());
-        return ResponseEntity.ok(promocionService.obtenerPorTrabajador(trabajadorId));
+
+        Integer trabajadorId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
+
+        return ResponseEntity.ok(
+                promocionService.obtenerPorTrabajador(
+                        trabajadorId
+                )
+        );
     }
 
     @GetMapping("/{id}/vigente")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Boolean> estaVigente(@PathVariable Long id) {
-        return ResponseEntity.ok(promocionService.estaVigente(id));
+    public ResponseEntity<Boolean> estaVigente(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                promocionService.estaVigente(
+                        id
+                )
+        );
     }
 
     @PutMapping("/{id}/finalizar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<PromocionSalida> finalizar(@PathVariable Long id) {
-        return ResponseEntity.ok(promocionService.finalizar(id));
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<PromocionSalida> finalizar(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                promocionService.finalizar(
+                        id
+                )
+        );
     }
 
-    private Integer obtenerIdDeUsuario(Jwt jwt) {
-        String id = jwt.getClaimAsString(CLAIM_NAME_IDENTIFIER);
+    private Integer obtenerIdDeUsuario(
+            Jwt jwt
+    ) {
+
+        if (jwt == null) {
+            throw new ReglaNegocioException(
+                    "No se pudo identificar al usuario autenticado"
+            );
+        }
+
+        String id =
+                jwt.getClaimAsString(
+                        CLAIM_NAME_IDENTIFIER
+                );
+
         if (id == null || id.isBlank()) {
             id = jwt.getSubject();
         }
-        return Integer.valueOf(id);
+
+        if (id == null || id.isBlank()) {
+            throw new ReglaNegocioException(
+                    "No se pudo identificar al usuario autenticado"
+            );
+        }
+
+        try {
+            return Integer.valueOf(id);
+        } catch (NumberFormatException exception) {
+            throw new ReglaNegocioException(
+                    "El identificador del usuario autenticado no es válido"
+            );
+        }
     }
 }

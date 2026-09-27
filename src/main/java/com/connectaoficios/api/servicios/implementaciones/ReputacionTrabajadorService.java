@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.reputacion.ReputacionTrabajadorFiltroDTO;
 import com.connectaoficios.api.dtos.reputacion.ReputacionTrabajadorGuardar;
 import com.connectaoficios.api.dtos.reputacion.ReputacionTrabajadorModificar;
 import com.connectaoficios.api.dtos.reputacion.ReputacionTrabajadorSalida;
@@ -15,7 +17,10 @@ import com.connectaoficios.api.repositorios.IReputacionTrabajadorRepository;
 import com.connectaoficios.api.repositorios.IResenaRepository;
 import com.connectaoficios.api.repositorios.ISolicitudServicioRepository;
 import com.connectaoficios.api.servicios.interfaces.IReputacionTrabajadorService;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +32,8 @@ import java.util.List;
 @Service
 public class ReputacionTrabajadorService
         implements IReputacionTrabajadorService {
+
+    private static final int TAMANIO_MAXIMO_PAGINA = 100;
 
     private final IReputacionTrabajadorRepository reputacionRepository;
     private final IPerfilTrabajadorRepository perfilTrabajadorRepository;
@@ -74,20 +81,38 @@ public class ReputacionTrabajadorService
         ReputacionTrabajador reputacion =
                 new ReputacionTrabajador();
 
-        reputacion.setPerfilTrabajador(perfilTrabajador);
-        reputacion.setPromedioCalificacion(BigDecimal.ZERO);
-        reputacion.setTotalResenas(0);
-        reputacion.setServiciosCompletados(0);
-        reputacion.setPuntuacionRanking(BigDecimal.ZERO);
+        reputacion.setPerfilTrabajador(
+                perfilTrabajador
+        );
+
+        reputacion.setPromedioCalificacion(
+                BigDecimal.ZERO
+        );
+
+        reputacion.setTotalResenas(
+                0
+        );
+
+        reputacion.setServiciosCompletados(
+                0
+        );
+
+        reputacion.setPuntuacionRanking(
+                BigDecimal.ZERO
+        );
 
         reputacion.setInsignia(
                 InsigniaReputacion.NUEVO_TRABAJADOR
         );
 
         ReputacionTrabajador reputacionGuardada =
-                reputacionRepository.save(reputacion);
+                reputacionRepository.save(
+                        reputacion
+                );
 
-        return convertirASalida(reputacionGuardada);
+        return convertirASalida(
+                reputacionGuardada
+        );
     }
 
     @Override
@@ -97,9 +122,13 @@ public class ReputacionTrabajadorService
     ) {
 
         ReputacionTrabajador reputacion =
-                buscarPorPerfil(perfilTrabajadorId);
+                buscarPorPerfil(
+                        perfilTrabajadorId
+                );
 
-        return convertirASalida(reputacion);
+        return convertirASalida(
+                reputacion
+        );
     }
 
     @Override
@@ -118,16 +147,98 @@ public class ReputacionTrabajadorService
         for (ReputacionTrabajador reputacion : reputaciones) {
 
             ReputacionTrabajadorSalida salida =
-                    convertirASalida(reputacion);
+                    convertirASalida(
+                            reputacion
+                    );
 
-            salida.setPosicionRanking(posicion);
+            salida.setPosicionRanking(
+                    posicion
+            );
 
-            ranking.add(salida);
+            ranking.add(
+                    salida
+            );
 
             posicion++;
         }
 
         return ranking;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<ReputacionTrabajadorSalida> buscarConFiltros(
+            ReputacionTrabajadorFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    ) {
+
+        validarRangoPromedio(
+                filtro.getPromedioMinimo(),
+                filtro.getPromedioMaximo()
+        );
+
+        validarRangoEnteros(
+                filtro.getTotalResenasMinimo(),
+                filtro.getTotalResenasMaximo(),
+                "reseñas"
+        );
+
+        validarRangoEnteros(
+                filtro.getServiciosCompletadosMinimo(),
+                filtro.getServiciosCompletadosMaximo(),
+                "servicios completados"
+        );
+
+        validarRangoPuntuacion(
+                filtro.getPuntuacionMinima(),
+                filtro.getPuntuacionMaxima()
+        );
+
+        Pageable pageable =
+                crearPageable(
+                        pagina,
+                        tamanio
+                );
+
+        Page<ReputacionTrabajadorSalida> resultado =
+                reputacionRepository
+                        .buscarConFiltros(
+                                filtro.getPerfilTrabajadorId(),
+                                filtro.getInsignia(),
+                                filtro.getPromedioMinimo(),
+                                filtro.getPromedioMaximo(),
+                                filtro.getTotalResenasMinimo(),
+                                filtro.getTotalResenasMaximo(),
+                                filtro.getServiciosCompletadosMinimo(),
+                                filtro.getServiciosCompletadosMaximo(),
+                                filtro.getPuntuacionMinima(),
+                                filtro.getPuntuacionMaxima(),
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        long posicionInicial =
+                (long) pageable.getPageNumber()
+                        * pageable.getPageSize();
+
+        for (int i = 0; i < resultado.getContent().size(); i++) {
+
+            long posicion =
+                    posicionInicial + i + 1;
+
+            if (posicion <= Integer.MAX_VALUE) {
+                resultado.getContent()
+                        .get(i)
+                        .setPosicionRanking(
+                                (int) posicion
+                        );
+            }
+        }
+
+        return PaginaSalida.desde(
+                resultado
+        );
     }
 
     @Override
@@ -138,22 +249,32 @@ public class ReputacionTrabajadorService
     ) {
 
         ReputacionTrabajador reputacion =
-                buscarPorPerfil(perfilTrabajadorId);
+                buscarPorPerfil(
+                        perfilTrabajadorId
+                );
 
         reputacion.setServiciosCompletados(
                 reputacionModificar.getServiciosCompletados()
         );
 
-        calcularPuntuacion(reputacion);
+        calcularPuntuacion(
+                reputacion
+        );
 
         reputacion.setInsignia(
-                determinarInsignia(reputacion)
+                determinarInsignia(
+                        reputacion
+                )
         );
 
         ReputacionTrabajador reputacionActualizada =
-                reputacionRepository.save(reputacion);
+                reputacionRepository.save(
+                        reputacion
+                );
 
-        return convertirASalida(reputacionActualizada);
+        return convertirASalida(
+                reputacionActualizada
+        );
     }
 
     @Override
@@ -173,7 +294,9 @@ public class ReputacionTrabajadorService
 
         ReputacionTrabajador reputacion =
                 reputacionRepository
-                        .findByPerfilTrabajadorId(perfilTrabajadorId)
+                        .findByPerfilTrabajadorId(
+                                perfilTrabajadorId
+                        )
                         .orElseGet(() -> {
 
                             ReputacionTrabajador nuevaReputacion =
@@ -187,8 +310,13 @@ public class ReputacionTrabajadorService
                                     BigDecimal.ZERO
                             );
 
-                            nuevaReputacion.setTotalResenas(0);
-                            nuevaReputacion.setServiciosCompletados(0);
+                            nuevaReputacion.setTotalResenas(
+                                    0
+                            );
+
+                            nuevaReputacion.setServiciosCompletados(
+                                    0
+                            );
 
                             nuevaReputacion.setPuntuacionRanking(
                                     BigDecimal.ZERO
@@ -204,9 +332,10 @@ public class ReputacionTrabajadorService
                         });
 
         List<Resena> resenas =
-                resenaRepository.findByPerfilTrabajadorId(
-                        perfilTrabajadorId
-                );
+                resenaRepository
+                        .findByPerfilTrabajadorId(
+                                perfilTrabajadorId
+                        );
 
         int totalResenas =
                 resenas.size();
@@ -218,13 +347,19 @@ public class ReputacionTrabajadorService
 
             int sumaCalificaciones =
                     resenas.stream()
-                            .mapToInt(Resena::getCalificacion)
+                            .mapToInt(
+                                    Resena::getCalificacion
+                            )
                             .sum();
 
             promedioCalificacion =
-                    BigDecimal.valueOf(sumaCalificaciones)
+                    BigDecimal.valueOf(
+                                    sumaCalificaciones
+                            )
                             .divide(
-                                    BigDecimal.valueOf(totalResenas),
+                                    BigDecimal.valueOf(
+                                            totalResenas
+                                    ),
                                     2,
                                     RoundingMode.HALF_UP
                             );
@@ -233,12 +368,15 @@ public class ReputacionTrabajadorService
         long totalServiciosCompletados =
                 solicitudServicioRepository
                         .countByTrabajadorIdAndEstado(
-                                perfilTrabajador.getTrabajadorId(),
+                                perfilTrabajador
+                                        .getTrabajadorId(),
                                 EstadoSolicitud.COMPLETADA
                         );
 
         int serviciosCompletados =
-                Math.toIntExact(totalServiciosCompletados);
+                Math.toIntExact(
+                        totalServiciosCompletados
+                );
 
         reputacion.setTotalResenas(
                 totalResenas
@@ -252,18 +390,173 @@ public class ReputacionTrabajadorService
                 serviciosCompletados
         );
 
-        calcularPuntuacion(reputacion);
+        calcularPuntuacion(
+                reputacion
+        );
 
         reputacion.setInsignia(
-                determinarInsignia(reputacion)
+                determinarInsignia(
+                        reputacion
+                )
         );
 
         ReputacionTrabajador reputacionActualizada =
-                reputacionRepository.save(reputacion);
+                reputacionRepository.save(
+                        reputacion
+                );
 
         return convertirASalida(
                 reputacionActualizada
         );
+    }
+
+    private Pageable crearPageable(
+            int pagina,
+            int tamanio
+    ) {
+
+        int paginaSegura =
+                Math.max(
+                        pagina,
+                        0
+                );
+
+        int tamanioSeguro =
+                Math.max(
+                        1,
+                        Math.min(
+                                tamanio,
+                                TAMANIO_MAXIMO_PAGINA
+                        )
+                );
+
+        return PageRequest.of(
+                paginaSegura,
+                tamanioSeguro,
+                Sort.by(
+                        Sort.Direction.DESC,
+                        "puntuacionRanking"
+                ).and(
+                        Sort.by(
+                                Sort.Direction.ASC,
+                                "id"
+                        )
+                )
+        );
+    }
+
+    private void validarRangoPromedio(
+            BigDecimal minimo,
+            BigDecimal maximo
+    ) {
+
+        BigDecimal cero =
+                BigDecimal.ZERO;
+
+        BigDecimal cinco =
+                BigDecimal.valueOf(5);
+
+        if (minimo != null
+                && (minimo.compareTo(cero) < 0
+                || minimo.compareTo(cinco) > 0)) {
+
+            throw new ReglaNegocioException(
+                    "El promedio mínimo debe estar entre 0 y 5"
+            );
+        }
+
+        if (maximo != null
+                && (maximo.compareTo(cero) < 0
+                || maximo.compareTo(cinco) > 0)) {
+
+            throw new ReglaNegocioException(
+                    "El promedio máximo debe estar entre 0 y 5"
+            );
+        }
+
+        if (minimo != null
+                && maximo != null
+                && minimo.compareTo(maximo) > 0) {
+
+            throw new ReglaNegocioException(
+                    "El promedio mínimo no puede ser mayor que el promedio máximo"
+            );
+        }
+    }
+
+    private void validarRangoEnteros(
+            Integer minimo,
+            Integer maximo,
+            String nombre
+    ) {
+
+        if (minimo != null
+                && minimo < 0) {
+
+            throw new ReglaNegocioException(
+                    "El valor mínimo de "
+                            + nombre
+                            + " no puede ser negativo"
+            );
+        }
+
+        if (maximo != null
+                && maximo < 0) {
+
+            throw new ReglaNegocioException(
+                    "El valor máximo de "
+                            + nombre
+                            + " no puede ser negativo"
+            );
+        }
+
+        if (minimo != null
+                && maximo != null
+                && minimo > maximo) {
+
+            throw new ReglaNegocioException(
+                    "El valor mínimo de "
+                            + nombre
+                            + " no puede ser mayor que el máximo"
+            );
+        }
+    }
+
+    private void validarRangoPuntuacion(
+            BigDecimal minimo,
+            BigDecimal maximo
+    ) {
+
+        if (minimo != null
+                && minimo.compareTo(
+                BigDecimal.ZERO
+        ) < 0) {
+
+            throw new ReglaNegocioException(
+                    "La puntuación mínima no puede ser negativa"
+            );
+        }
+
+        if (maximo != null
+                && maximo.compareTo(
+                BigDecimal.ZERO
+        ) < 0) {
+
+            throw new ReglaNegocioException(
+                    "La puntuación máxima no puede ser negativa"
+            );
+        }
+
+        if (minimo != null
+                && maximo != null
+                && minimo.compareTo(
+                maximo
+        ) > 0) {
+
+            throw new ReglaNegocioException(
+                    "La puntuación mínima no puede ser mayor que la puntuación máxima"
+            );
+        }
     }
 
     private ReputacionTrabajador buscarPorPerfil(
@@ -271,7 +564,9 @@ public class ReputacionTrabajadorService
     ) {
 
         return reputacionRepository
-                .findByPerfilTrabajadorId(perfilTrabajadorId)
+                .findByPerfilTrabajadorId(
+                        perfilTrabajadorId
+                )
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException(
                                 "No se encontró la reputación del trabajador"
@@ -304,7 +599,9 @@ public class ReputacionTrabajadorService
                 );
 
         BigDecimal puntosResenas =
-                BigDecimal.valueOf(totalResenas)
+                BigDecimal.valueOf(
+                                totalResenas
+                        )
                         .multiply(
                                 BigDecimal.valueOf(2)
                         );
@@ -316,8 +613,12 @@ public class ReputacionTrabajadorService
 
         BigDecimal puntuacion =
                 puntosCalificacion
-                        .add(puntosResenas)
-                        .add(puntosServicios)
+                        .add(
+                                puntosResenas
+                        )
+                        .add(
+                                puntosServicios
+                        )
                         .setScale(
                                 2,
                                 RoundingMode.HALF_UP
@@ -347,31 +648,25 @@ public class ReputacionTrabajadorService
                         ? reputacion.getServiciosCompletados()
                         : 0;
 
-        if (
-                promedio.compareTo(
-                        BigDecimal.valueOf(4.8)
-                ) >= 0
-                        && totalResenas >= 20
-                        && serviciosCompletados >= 30
-        ) {
+        if (promedio.compareTo(
+                BigDecimal.valueOf(4.8)
+        ) >= 0
+                && totalResenas >= 20
+                && serviciosCompletados >= 30) {
 
             return InsigniaReputacion.TOP_PLATAFORMA;
         }
 
-        if (
-                promedio.compareTo(
-                        BigDecimal.valueOf(4.5)
-                ) >= 0
-                        && totalResenas >= 10
-        ) {
+        if (promedio.compareTo(
+                BigDecimal.valueOf(4.5)
+        ) >= 0
+                && totalResenas >= 10) {
 
             return InsigniaReputacion.MEJOR_VALORADO;
         }
 
-        if (
-                serviciosCompletados >= 10
-                        && totalResenas >= 5
-        ) {
+        if (serviciosCompletados >= 10
+                && totalResenas >= 5) {
 
             return InsigniaReputacion.TRABAJADOR_CONFIABLE;
         }
@@ -391,7 +686,9 @@ public class ReputacionTrabajadorService
         );
 
         salida.setPerfilTrabajadorId(
-                reputacion.getPerfilTrabajador().getId()
+                reputacion
+                        .getPerfilTrabajador()
+                        .getId()
         );
 
         salida.setPromedioCalificacion(

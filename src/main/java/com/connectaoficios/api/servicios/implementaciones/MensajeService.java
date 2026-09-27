@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.mensaje.MensajeFiltroDTO;
 import com.connectaoficios.api.dtos.mensaje.MensajeGuardar;
 import com.connectaoficios.api.dtos.mensaje.MensajeSalida;
 import com.connectaoficios.api.enums.EstadoSolicitud;
@@ -12,14 +14,21 @@ import com.connectaoficios.api.repositorios.IConversacionRepository;
 import com.connectaoficios.api.repositorios.IMensajeRepository;
 import com.connectaoficios.api.servicios.interfaces.IChatTiempoRealService;
 import com.connectaoficios.api.servicios.interfaces.IMensajeService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class MensajeService implements IMensajeService {
+
+    private static final int TAMANIO_MAXIMO_PAGINA = 100;
 
     private final IMensajeRepository mensajeRepository;
     private final IConversacionRepository conversacionRepository;
@@ -52,24 +61,44 @@ public class MensajeService implements IMensajeService {
                 remitenteId
         );
 
-        validarEnvioPermitido(conversacion);
-
-        Mensaje mensaje = new Mensaje();
-
-        mensaje.setConversacion(conversacion);
-        mensaje.setRemitenteId(remitenteId);
-        mensaje.setContenido(
-                mensajeGuardar.getContenido().trim()
+        validarEnvioPermitido(
+                conversacion
         );
-        mensaje.setLeido(false);
+
+        Mensaje mensaje =
+                new Mensaje();
+
+        mensaje.setConversacion(
+                conversacion
+        );
+
+        mensaje.setRemitenteId(
+                remitenteId
+        );
+
+        mensaje.setContenido(
+                mensajeGuardar
+                        .getContenido()
+                        .trim()
+        );
+
+        mensaje.setLeido(
+                false
+        );
 
         Mensaje mensajeGuardado =
-                mensajeRepository.save(mensaje);
+                mensajeRepository.save(
+                        mensaje
+                );
 
         MensajeSalida salida =
-                convertirASalida(mensajeGuardado);
+                convertirASalida(
+                        mensajeGuardado
+                );
 
-        chatTiempoRealService.publicarMensaje(salida);
+        chatTiempoRealService.publicarMensaje(
+                salida
+        );
 
         return salida;
     }
@@ -82,7 +111,9 @@ public class MensajeService implements IMensajeService {
     ) {
 
         Conversacion conversacion =
-                buscarConversacion(conversacionId);
+                buscarConversacion(
+                        conversacionId
+                );
 
         validarParticipante(
                 conversacion,
@@ -99,12 +130,75 @@ public class MensajeService implements IMensajeService {
                 new ArrayList<>();
 
         for (Mensaje mensaje : mensajes) {
+
             salida.add(
-                    convertirASalida(mensaje)
+                    convertirASalida(
+                            mensaje
+                    )
             );
         }
 
         return salida;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<MensajeSalida> buscarConFiltros(
+            MensajeFiltroDTO filtro,
+            Integer usuarioId,
+            int pagina,
+            int tamanio
+    ) {
+
+        if (filtro.getConversacionId() == null) {
+
+            throw new ReglaNegocioException(
+                    "La conversación es obligatoria para consultar los mensajes"
+            );
+        }
+
+        Conversacion conversacion =
+                buscarConversacion(
+                        filtro.getConversacionId()
+                );
+
+        validarParticipante(
+                conversacion,
+                usuarioId
+        );
+
+        validarRangoFechas(
+                filtro.getFechaDesde(),
+                filtro.getFechaHasta()
+        );
+
+        String texto =
+                normalizarTexto(
+                        filtro.getTexto()
+                );
+
+        Pageable pageable =
+                crearPageable(
+                        pagina,
+                        tamanio
+                );
+
+        Page<MensajeSalida> resultado =
+                mensajeRepository
+                        .buscarConFiltros(
+                                filtro.getConversacionId(),
+                                filtro.getRemitenteId(),
+                                filtro.getLeido(),
+                                texto,
+                                filtro.getFechaDesde(),
+                                filtro.getFechaHasta(),
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(
+                resultado
+        );
     }
 
     @Override
@@ -114,28 +208,40 @@ public class MensajeService implements IMensajeService {
             Integer usuarioId
     ) {
 
-        Mensaje mensaje = mensajeRepository
-                .findById(mensajeId)
-                .orElseThrow(() ->
-                        new RecursoNoEncontradoException(
-                                "No se encontró el mensaje"
-                        )
-                );
+        Mensaje mensaje =
+                mensajeRepository
+                        .findById(mensajeId)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "No se encontró el mensaje"
+                                )
+                        );
 
         validarParticipante(
                 mensaje.getConversacion(),
                 usuarioId
         );
 
-        if (usuarioId.equals(mensaje.getRemitenteId())) {
+        if (usuarioId.equals(
+                mensaje.getRemitenteId()
+        )) {
+
             throw new ReglaNegocioException(
                     "El remitente no puede marcar su propio mensaje como leído"
             );
         }
 
-        if (!Boolean.TRUE.equals(mensaje.getLeido())) {
-            mensaje.setLeido(true);
-            mensajeRepository.save(mensaje);
+        if (!Boolean.TRUE.equals(
+                mensaje.getLeido()
+        )) {
+
+            mensaje.setLeido(
+                    true
+            );
+
+            mensajeRepository.save(
+                    mensaje
+            );
         }
     }
 
@@ -147,7 +253,9 @@ public class MensajeService implements IMensajeService {
     ) {
 
         Conversacion conversacion =
-                buscarConversacion(conversacionId);
+                buscarConversacion(
+                        conversacionId
+                );
 
         validarParticipante(
                 conversacion,
@@ -155,9 +263,71 @@ public class MensajeService implements IMensajeService {
         );
 
         return mensajeRepository
-                .countByConversacionIdAndLeidoFalse(
-                        conversacionId
+                .countByConversacionIdAndLeidoFalseAndRemitenteIdNot(
+                        conversacionId,
+                        usuarioId
                 );
+    }
+
+    private Pageable crearPageable(
+            int pagina,
+            int tamanio
+    ) {
+
+        int paginaSegura =
+                Math.max(
+                        pagina,
+                        0
+                );
+
+        int tamanioSeguro =
+                Math.max(
+                        1,
+                        Math.min(
+                                tamanio,
+                                TAMANIO_MAXIMO_PAGINA
+                        )
+                );
+
+        return PageRequest.of(
+                paginaSegura,
+                tamanioSeguro,
+                Sort.by(
+                        Sort.Direction.ASC,
+                        "fechaEnvio"
+                )
+        );
+    }
+
+    private void validarRangoFechas(
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    ) {
+
+        if (fechaDesde != null
+                && fechaHasta != null
+                && fechaDesde.isAfter(fechaHasta)) {
+
+            throw new ReglaNegocioException(
+                    "La fecha inicial no puede ser posterior a la fecha final"
+            );
+        }
+    }
+
+    private String normalizarTexto(
+            String texto
+    ) {
+
+        if (texto == null) {
+            return null;
+        }
+
+        String textoLimpio =
+                texto.trim();
+
+        return textoLimpio.isBlank()
+                ? null
+                : textoLimpio;
     }
 
     private Conversacion buscarConversacion(
@@ -179,6 +349,7 @@ public class MensajeService implements IMensajeService {
     ) {
 
         if (usuarioId == null) {
+
             throw new ReglaNegocioException(
                     "No se pudo identificar al usuario autenticado"
             );
@@ -188,12 +359,17 @@ public class MensajeService implements IMensajeService {
                 conversacion.getSolicitud();
 
         boolean esCliente =
-                usuarioId.equals(solicitud.getClienteId());
+                usuarioId.equals(
+                        solicitud.getClienteId()
+                );
 
         boolean esTrabajador =
-                usuarioId.equals(solicitud.getTrabajadorId());
+                usuarioId.equals(
+                        solicitud.getTrabajadorId()
+                );
 
         if (!esCliente && !esTrabajador) {
+
             throw new ReglaNegocioException(
                     "El usuario no pertenece a esta conversación"
             );
@@ -226,19 +402,28 @@ public class MensajeService implements IMensajeService {
         MensajeSalida salida =
                 new MensajeSalida();
 
-        salida.setId(mensaje.getId());
-        salida.setConversacionId(
-                mensaje.getConversacion().getId()
+        salida.setId(
+                mensaje.getId()
         );
+
+        salida.setConversacionId(
+                mensaje
+                        .getConversacion()
+                        .getId()
+        );
+
         salida.setRemitenteId(
                 mensaje.getRemitenteId()
         );
+
         salida.setContenido(
                 mensaje.getContenido()
         );
+
         salida.setFechaEnvio(
                 mensaje.getFechaEnvio()
         );
+
         salida.setLeido(
                 mensaje.getLeido()
         );

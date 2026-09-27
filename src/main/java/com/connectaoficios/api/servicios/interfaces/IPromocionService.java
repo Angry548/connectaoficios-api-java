@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.promocion.PromocionFiltroDTO;
 import com.connectaoficios.api.dtos.promocion.PromocionGuardar;
 import com.connectaoficios.api.dtos.promocion.PromocionResumenSalida;
 import com.connectaoficios.api.dtos.promocion.PromocionSalida;
@@ -13,25 +15,56 @@ public interface IPromocionService {
 
     List<PromocionSalida> obtenerTodos();
 
-    Page<PromocionSalida> obtenerTodosPaginados(Pageable pageable);
+    Page<PromocionSalida> obtenerTodosPaginados(
+            Pageable pageable
+    );
 
-    PromocionSalida obtenerPorId(Long id);
+    PromocionSalida obtenerPorId(
+            Long id
+    );
 
-    List<PromocionSalida> obtenerPorTrabajador(Integer trabajadorId);
+    List<PromocionSalida> obtenerPorTrabajador(
+            Integer trabajadorId
+    );
 
-    List<PromocionSalida> obtenerPorServicio(Long servicioId);
+    List<PromocionSalida> obtenerPorServicio(
+            Long servicioId
+    );
 
-    Page<PromocionSalida> obtenerPorEstado(EstadoPromocion estado, Pageable pageable);
+    Page<PromocionSalida> obtenerPorEstado(
+            EstadoPromocion estado,
+            Pageable pageable
+    );
 
-    PromocionResumenSalida obtenerResumen(Long servicioId, Long planId);
+    PaginaSalida<PromocionSalida> buscarConFiltros(
+            PromocionFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    );
 
-    PromocionSalida guardar(PromocionGuardar dto, Integer trabajadorId);
+    PromocionResumenSalida obtenerResumen(
+            Long servicioId,
+            Long planId
+    );
 
-    PromocionSalida activar(Long id);
+    PromocionSalida guardar(
+            PromocionGuardar dto,
+            Integer trabajadorId
+    );
 
-    PromocionSalida cancelar(Long id);
+    PromocionSalida activar(
+            Long id
+    );
 
-    PromocionSalida finalizar(Long id);
+    PromocionSalida cancelar(
+            Long id
+    );
 
-    boolean estaVigente(Long id);
+    PromocionSalida finalizar(
+            Long id
+    );
+
+    boolean estaVigente(
+            Long id
+    );
 }

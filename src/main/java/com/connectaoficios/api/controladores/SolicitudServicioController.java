@@ -1,17 +1,19 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
+import com.connectaoficios.api.dtos.solicitud.SolicitudServicioFiltroDTO;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRespuesta;
+import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.servicios.interfaces.ISolicitudServicioService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -20,8 +22,11 @@ public class SolicitudServicioController {
 
     private final ISolicitudServicioService solicitudServicioService;
 
-    public SolicitudServicioController(ISolicitudServicioService solicitudServicioService) {
-        this.solicitudServicioService = solicitudServicioService;
+    public SolicitudServicioController(
+            ISolicitudServicioService solicitudServicioService
+    ) {
+        this.solicitudServicioService =
+                solicitudServicioService;
     }
 
     @PostMapping
@@ -29,7 +34,12 @@ public class SolicitudServicioController {
     public ResponseEntity<SolicitudServicioRespuesta> guardar(
             @Valid @RequestBody SolicitudServicioGuardar solicitudGuardar
     ) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.guardar(solicitudGuardar);
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.guardar(
+                        solicitudGuardar
+                );
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(solicitud);
@@ -38,64 +48,179 @@ public class SolicitudServicioController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerTodas() {
-        List<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerTodas();
-        return ResponseEntity.ok(solicitudes);
+
+        List<SolicitudServicioRespuesta> solicitudes =
+                solicitudServicioService.obtenerTodas();
+
+        return ResponseEntity.ok(
+                solicitudes
+        );
     }
 
     @GetMapping("/paginadas")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<Page<SolicitudServicioRespuesta>> obtenerTodasPaginadas(Pageable pageable) {
-        Page<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerTodasPaginadas(pageable);
-        return ResponseEntity.ok(solicitudes);
+    public ResponseEntity<PaginaSalida<SolicitudServicioRespuesta>> obtenerPaginadas(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) Long servicioId,
+            @RequestParam(required = false) Integer clienteId,
+            @RequestParam(required = false) Integer trabajadorId,
+            @RequestParam(required = false) EstadoSolicitud estado,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        SolicitudServicioFiltroDTO filtro =
+                new SolicitudServicioFiltroDTO();
+
+        filtro.setTexto(
+                texto
+        );
+
+        filtro.setServicioId(
+                servicioId
+        );
+
+        filtro.setClienteId(
+                clienteId
+        );
+
+        filtro.setTrabajadorId(
+                trabajadorId
+        );
+
+        filtro.setEstado(
+                estado
+        );
+
+        filtro.setFechaDesde(
+                fechaDesde
+        );
+
+        filtro.setFechaHasta(
+                fechaHasta
+        );
+
+        return ResponseEntity.ok(
+                solicitudServicioService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                )
+        );
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<SolicitudServicioRespuesta> obtenerPorId(@PathVariable Long id) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.obtenerPorId(id);
-        return ResponseEntity.ok(solicitud);
+    public ResponseEntity<SolicitudServicioRespuesta> obtenerPorId(
+            @PathVariable Long id
+    ) {
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.obtenerPorId(
+                        id
+                );
+
+        return ResponseEntity.ok(
+                solicitud
+        );
     }
 
     @GetMapping("/cliente/{clienteId}")
     @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorCliente(@PathVariable Integer clienteId) {
-        List<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerPorCliente(clienteId);
-        return ResponseEntity.ok(solicitudes);
+    public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorCliente(
+            @PathVariable Integer clienteId
+    ) {
+
+        List<SolicitudServicioRespuesta> solicitudes =
+                solicitudServicioService.obtenerPorCliente(
+                        clienteId
+                );
+
+        return ResponseEntity.ok(
+                solicitudes
+        );
     }
 
     @GetMapping("/trabajador/{trabajadorId}")
     @PreAuthorize("hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorTrabajador(@PathVariable Integer trabajadorId) {
-        List<SolicitudServicioRespuesta> solicitudes = solicitudServicioService.obtenerPorTrabajador(trabajadorId);
-        return ResponseEntity.ok(solicitudes);
+    public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorTrabajador(
+            @PathVariable Integer trabajadorId
+    ) {
+
+        List<SolicitudServicioRespuesta> solicitudes =
+                solicitudServicioService.obtenerPorTrabajador(
+                        trabajadorId
+                );
+
+        return ResponseEntity.ok(
+                solicitudes
+        );
     }
 
     @PatchMapping("/{id}/aceptar")
     @PreAuthorize("hasRole('TRABAJADOR')")
-    public ResponseEntity<SolicitudServicioRespuesta> aceptar(@PathVariable Long id) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.aceptar(id);
-        return ResponseEntity.ok(solicitud);
+    public ResponseEntity<SolicitudServicioRespuesta> aceptar(
+            @PathVariable Long id
+    ) {
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.aceptar(
+                        id
+                );
+
+        return ResponseEntity.ok(
+                solicitud
+        );
     }
 
     @PatchMapping("/{id}/rechazar")
     @PreAuthorize("hasRole('TRABAJADOR')")
-    public ResponseEntity<SolicitudServicioRespuesta> rechazar(@PathVariable Long id) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.rechazar(id);
-        return ResponseEntity.ok(solicitud);
+    public ResponseEntity<SolicitudServicioRespuesta> rechazar(
+            @PathVariable Long id
+    ) {
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.rechazar(
+                        id
+                );
+
+        return ResponseEntity.ok(
+                solicitud
+        );
     }
 
     @PatchMapping("/{id}/iniciar")
     @PreAuthorize("hasRole('TRABAJADOR')")
-    public ResponseEntity<SolicitudServicioRespuesta> iniciar(@PathVariable Long id) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.iniciar(id);
-        return ResponseEntity.ok(solicitud);
+    public ResponseEntity<SolicitudServicioRespuesta> iniciar(
+            @PathVariable Long id
+    ) {
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.iniciar(
+                        id
+                );
+
+        return ResponseEntity.ok(
+                solicitud
+        );
     }
 
     @PatchMapping("/{id}/completar")
     @PreAuthorize("hasRole('TRABAJADOR')")
-    public ResponseEntity<SolicitudServicioRespuesta> completar(@PathVariable Long id) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.completar(id);
-        return ResponseEntity.ok(solicitud);
+    public ResponseEntity<SolicitudServicioRespuesta> completar(
+            @PathVariable Long id
+    ) {
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.completar(
+                        id
+                );
+
+        return ResponseEntity.ok(
+                solicitud
+        );
     }
 
     @PatchMapping("/{id}/cancelar")
@@ -104,14 +229,30 @@ public class SolicitudServicioController {
             @PathVariable Long id,
             @Valid @RequestBody SolicitudServicioCancelar solicitudCancelar
     ) {
-        SolicitudServicioRespuesta solicitud = solicitudServicioService.cancelar(id, solicitudCancelar);
-        return ResponseEntity.ok(solicitud);
+
+        SolicitudServicioRespuesta solicitud =
+                solicitudServicioService.cancelar(
+                        id,
+                        solicitudCancelar
+                );
+
+        return ResponseEntity.ok(
+                solicitud
+        );
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        solicitudServicioService.eliminar(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> eliminar(
+            @PathVariable Long id
+    ) {
+
+        solicitudServicioService.eliminar(
+                id
+        );
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

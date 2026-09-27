@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioFiltroDTO;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioGuardar;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioModificar;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioSalida;
@@ -22,9 +24,21 @@ public interface IDisponibilidadServicioService {
 
     DisponibilidadServicioSalida obtenerPorId(Long id);
 
-    List<DisponibilidadServicioSalida> listarPorServicio(Long servicioId);
+    List<DisponibilidadServicioSalida> listarPorServicio(
+            Long servicioId
+    );
 
-    List<DisponibilidadServicioSalida> listarActivasPorServicio(Long servicioId);
+    List<DisponibilidadServicioSalida> listarActivasPorServicio(
+            Long servicioId
+    );
 
-    List<DisponibilidadServicioSalida> buscarPorDia(DiaSemana diaSemana);
+    List<DisponibilidadServicioSalida> buscarPorDia(
+            DiaSemana diaSemana
+    );
+
+    PaginaSalida<DisponibilidadServicioSalida> buscarConFiltros(
+            DisponibilidadServicioFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    );
 }

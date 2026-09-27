@@ -1,15 +1,16 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.reporte.ReporteFiltroDTO;
 import com.connectaoficios.api.dtos.reporte.ReporteGuardar;
 import com.connectaoficios.api.dtos.reporte.ReporteRechazo;
 import com.connectaoficios.api.dtos.reporte.ReporteResolucion;
 import com.connectaoficios.api.dtos.reporte.ReporteSalida;
 import com.connectaoficios.api.enums.EstadoReporte;
 import com.connectaoficios.api.enums.TipoReporte;
+import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.servicios.interfaces.IReporteService;
-
 import jakarta.validation.Valid;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -33,7 +35,8 @@ public class ReporteController {
     public ReporteController(
             IReporteService reporteService
     ) {
-        this.reporteService = reporteService;
+        this.reporteService =
+                reporteService;
     }
 
     @PostMapping
@@ -44,14 +47,18 @@ public class ReporteController {
     ) {
 
         Integer usuarioAutenticadoId =
-                obtenerIdDeUsuario(authentication.getToken());
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
 
         reporteGuardar.setUsuarioReportanteId(
                 usuarioAutenticadoId
         );
 
         ReporteSalida reporte =
-                reporteService.guardar(reporteGuardar);
+                reporteService.guardar(
+                        reporteGuardar
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -62,15 +69,87 @@ public class ReporteController {
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
-    public ResponseEntity<Page<ReporteSalida>>
-    obtenerTodosPaginados(
+    public ResponseEntity<Page<ReporteSalida>> obtenerTodosPaginados(
             Pageable pageable
     ) {
 
         Page<ReporteSalida> reportes =
-                reporteService.obtenerTodosPaginados(pageable);
+                reporteService.obtenerTodosPaginados(
+                        pageable
+                );
 
-        return ResponseEntity.ok(reportes);
+        return ResponseEntity.ok(
+                reportes
+        );
+    }
+
+    @GetMapping("/paginados")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<PaginaSalida<ReporteSalida>> buscarConFiltros(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) EstadoReporte estado,
+            @RequestParam(required = false) TipoReporte tipo,
+            @RequestParam(required = false) Integer usuarioReportanteId,
+            @RequestParam(required = false) Integer usuarioReportadoId,
+            @RequestParam(required = false) Long servicioId,
+            @RequestParam(required = false) Integer administradorId,
+            @RequestParam(required = false) LocalDateTime fechaDesde,
+            @RequestParam(required = false) LocalDateTime fechaHasta,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        ReporteFiltroDTO filtro =
+                new ReporteFiltroDTO();
+
+        filtro.setTexto(
+                texto
+        );
+
+        filtro.setEstado(
+                estado
+        );
+
+        filtro.setTipo(
+                tipo
+        );
+
+        filtro.setUsuarioReportanteId(
+                usuarioReportanteId
+        );
+
+        filtro.setUsuarioReportadoId(
+                usuarioReportadoId
+        );
+
+        filtro.setServicioId(
+                servicioId
+        );
+
+        filtro.setAdministradorId(
+                administradorId
+        );
+
+        filtro.setFechaDesde(
+                fechaDesde
+        );
+
+        filtro.setFechaHasta(
+                fechaHasta
+        );
+
+        PaginaSalida<ReporteSalida> reportes =
+                reporteService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                );
+
+        return ResponseEntity.ok(
+                reportes
+        );
     }
 
     @GetMapping("/{id}")
@@ -82,9 +161,13 @@ public class ReporteController {
     ) {
 
         ReporteSalida reporte =
-                reporteService.obtenerPorId(id);
+                reporteService.obtenerPorId(
+                        id
+                );
 
-        return ResponseEntity.ok(reporte);
+        return ResponseEntity.ok(
+                reporte
+        );
     }
 
     @GetMapping("/estado/{estado}")
@@ -102,7 +185,9 @@ public class ReporteController {
                         pageable
                 );
 
-        return ResponseEntity.ok(reportes);
+        return ResponseEntity.ok(
+                reportes
+        );
     }
 
     @GetMapping("/tipo/{tipo}")
@@ -120,15 +205,16 @@ public class ReporteController {
                         pageable
                 );
 
-        return ResponseEntity.ok(reportes);
+        return ResponseEntity.ok(
+                reportes
+        );
     }
 
     @GetMapping("/reportante/{usuarioReportanteId}")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
-    public ResponseEntity<List<ReporteSalida>>
-    obtenerPorUsuarioReportante(
+    public ResponseEntity<List<ReporteSalida>> obtenerPorUsuarioReportante(
             @PathVariable Integer usuarioReportanteId
     ) {
 
@@ -137,15 +223,16 @@ public class ReporteController {
                         usuarioReportanteId
                 );
 
-        return ResponseEntity.ok(reportes);
+        return ResponseEntity.ok(
+                reportes
+        );
     }
 
     @GetMapping("/reportado/{usuarioReportadoId}")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
-    public ResponseEntity<List<ReporteSalida>>
-    obtenerPorUsuarioReportado(
+    public ResponseEntity<List<ReporteSalida>> obtenerPorUsuarioReportado(
             @PathVariable Integer usuarioReportadoId
     ) {
 
@@ -154,7 +241,9 @@ public class ReporteController {
                         usuarioReportadoId
                 );
 
-        return ResponseEntity.ok(reportes);
+        return ResponseEntity.ok(
+                reportes
+        );
     }
 
     @PutMapping("/{id}/iniciar-revision")
@@ -166,9 +255,13 @@ public class ReporteController {
     ) {
 
         ReporteSalida reporte =
-                reporteService.iniciarRevision(id);
+                reporteService.iniciarRevision(
+                        id
+                );
 
-        return ResponseEntity.ok(reporte);
+        return ResponseEntity.ok(
+                reporte
+        );
     }
 
     @PutMapping("/{id}/resolver")
@@ -193,7 +286,9 @@ public class ReporteController {
                         administradorId
                 );
 
-        return ResponseEntity.ok(reporte);
+        return ResponseEntity.ok(
+                reporte
+        );
     }
 
     @PutMapping("/{id}/rechazar")
@@ -218,12 +313,20 @@ public class ReporteController {
                         administradorId
                 );
 
-        return ResponseEntity.ok(reporte);
+        return ResponseEntity.ok(
+                reporte
+        );
     }
 
     private Integer obtenerIdDeUsuario(
             Jwt jwt
     ) {
+
+        if (jwt == null) {
+            throw new ReglaNegocioException(
+                    "No se pudo identificar al usuario autenticado"
+            );
+        }
 
         String id =
                 jwt.getClaimAsString(
@@ -234,6 +337,18 @@ public class ReporteController {
             id = jwt.getSubject();
         }
 
-        return Integer.valueOf(id);
+        if (id == null || id.isBlank()) {
+            throw new ReglaNegocioException(
+                    "No se pudo identificar al usuario autenticado"
+            );
+        }
+
+        try {
+            return Integer.valueOf(id);
+        } catch (NumberFormatException exception) {
+            throw new ReglaNegocioException(
+                    "El identificador del usuario autenticado no es válido"
+            );
+        }
     }
 }

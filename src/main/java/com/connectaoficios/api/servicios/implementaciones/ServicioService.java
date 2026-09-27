@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.servicio.ServicioBusquedaSalida;
 import com.connectaoficios.api.dtos.servicio.ServicioCambiarEstado;
 import com.connectaoficios.api.dtos.servicio.ServicioFiltroDTO;
 import com.connectaoficios.api.dtos.servicio.ServicioGuardar;
@@ -17,6 +19,10 @@ import com.connectaoficios.api.repositorios.IPerfilTrabajadorRepository;
 import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.repositorios.IZonaCoberturaRepository;
 import com.connectaoficios.api.servicios.interfaces.IServicioService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +34,9 @@ import java.util.Set;
 
 @Service
 public class ServicioService implements IServicioService {
+
+    private static final int TAMANIO_MAXIMO_PAGINA = 100;
+    private static final int LIMITE_MAXIMO_BUSQUEDA = 20;
 
     private final IServicioRepository servicioRepository;
     private final IPerfilTrabajadorRepository perfilTrabajadorRepository;
@@ -98,6 +107,7 @@ public class ServicioService implements IServicioService {
         Servicio servicio = buscarServicio(id);
 
         if (servicioModificar.getCategoriaId() != null) {
+
             Categoria categoria =
                     buscarCategoriaActiva(
                             servicioModificar.getCategoriaId()
@@ -108,7 +118,8 @@ public class ServicioService implements IServicioService {
 
         if (servicioModificar.getTitulo() != null) {
 
-            String titulo = servicioModificar.getTitulo().trim();
+            String titulo =
+                    servicioModificar.getTitulo().trim();
 
             if (titulo.isBlank()) {
                 throw new ReglaNegocioException(
@@ -207,7 +218,9 @@ public class ServicioService implements IServicioService {
     @Transactional(readOnly = true)
     public ServicioSalida obtenerPorId(Long id) {
 
-        return convertirASalida(buscarServicio(id));
+        return convertirASalida(
+                buscarServicio(id)
+        );
     }
 
     @Override
@@ -224,7 +237,9 @@ public class ServicioService implements IServicioService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ServicioSalida> listarPorCategoria(Long categoriaId) {
+    public List<ServicioSalida> listarPorCategoria(
+            Long categoriaId
+    ) {
 
         return convertirLista(
                 servicioRepository
@@ -275,33 +290,291 @@ public class ServicioService implements IServicioService {
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<ServicioSalida> listarActivosPaginado(
+            int pagina,
+            int tamanio
+    ) {
+
+        Pageable pageable =
+                crearPageable(pagina, tamanio);
+
+        Page<ServicioSalida> resultado =
+                servicioRepository
+                        .findAllByEliminadoFalseAndEstado(
+                                EstadoServicio.ACTIVO,
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(resultado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<ServicioSalida> listarPorCategoriaPaginado(
+            Long categoriaId,
+            int pagina,
+            int tamanio
+    ) {
+
+        Pageable pageable =
+                crearPageable(pagina, tamanio);
+
+        Page<ServicioSalida> resultado =
+                servicioRepository
+                        .findAllByCategoriaIdAndEliminadoFalse(
+                                categoriaId,
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(resultado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<ServicioSalida> listarPorTrabajadorPaginado(
+            Long perfilTrabajadorId,
+            int pagina,
+            int tamanio
+    ) {
+
+        Pageable pageable =
+                crearPageable(pagina, tamanio);
+
+        Page<ServicioSalida> resultado =
+                servicioRepository
+                        .findAllByPerfilTrabajadorIdAndEliminadoFalse(
+                                perfilTrabajadorId,
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(resultado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<ServicioSalida> buscarPorZonaPaginado(
+            Long zonaId,
+            int pagina,
+            int tamanio
+    ) {
+
+        Pageable pageable =
+                crearPageable(pagina, tamanio);
+
+        Page<ServicioSalida> resultado =
+                servicioRepository
+                        .findAllByZonaCoberturaId(
+                                zonaId,
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(resultado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<ServicioSalida> buscarConFiltrosPaginado(
+            ServicioFiltroDTO filtro,
+            int pagina,
+            int tamanio
+    ) {
+
+        validarRangoTarifasFiltro(filtro);
+
+        String texto =
+                normalizarTexto(filtro.getTexto());
+
+        Pageable pageable =
+                crearPageable(pagina, tamanio);
+
+        Page<ServicioSalida> resultado =
+                servicioRepository
+                        .buscarConFiltrosPaginado(
+                                texto,
+                                filtro.getPerfilTrabajadorId(),
+                                filtro.getCategoriaId(),
+                                filtro.getZonaId(),
+                                filtro.getDiaSemana(),
+                                filtro.getEstado(),
+                                filtro.getTarifaMinima(),
+                                filtro.getTarifaMaxima(),
+                                pageable
+                        )
+                        .map(this::convertirASalida);
+
+        return PaginaSalida.desde(resultado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServicioBusquedaSalida> buscarParaAutocomplete(
+            String texto,
+            int limite
+    ) {
+
+        String textoNormalizado =
+                normalizarTexto(texto);
+
+        if (textoNormalizado == null
+                || textoNormalizado.length() < 2) {
+
+            throw new ReglaNegocioException(
+                    "Debe ingresar al menos 2 caracteres para buscar"
+            );
+        }
+
+        int limiteSeguro =
+                Math.max(
+                        1,
+                        Math.min(
+                                limite,
+                                LIMITE_MAXIMO_BUSQUEDA
+                        )
+                );
+
+        Pageable pageable =
+                PageRequest.of(
+                        0,
+                        limiteSeguro
+                );
+
+        List<Servicio> servicios =
+                servicioRepository.buscarParaAutocomplete(
+                        textoNormalizado,
+                        EstadoServicio.ACTIVO,
+                        pageable
+                );
+
+        List<ServicioBusquedaSalida> salida =
+                new ArrayList<>();
+
+        for (Servicio servicio : servicios) {
+
+            salida.add(
+                    convertirABusquedaSalida(servicio)
+            );
+        }
+
+        return salida;
+    }
+
+    private Pageable crearPageable(
+            int pagina,
+            int tamanio
+    ) {
+
+        int paginaSegura =
+                Math.max(pagina, 0);
+
+        int tamanioSeguro =
+                Math.max(
+                        1,
+                        Math.min(
+                                tamanio,
+                                TAMANIO_MAXIMO_PAGINA
+                        )
+                );
+
+        return PageRequest.of(
+                paginaSegura,
+                tamanioSeguro,
+                Sort.by(
+                        Sort.Direction.DESC,
+                        "fechaCreacion"
+                )
+        );
+    }
+
+    private String normalizarTexto(String texto) {
+
+        if (texto == null) {
+            return null;
+        }
+
+        String textoLimpio =
+                texto.trim();
+
+        return textoLimpio.isBlank()
+                ? null
+                : textoLimpio;
+    }
+
+    private void validarRangoTarifasFiltro(
+            ServicioFiltroDTO filtro
+    ) {
+
+        if (filtro.getTarifaMinima() != null
+                && filtro.getTarifaMinima()
+                .compareTo(BigDecimal.ZERO) < 0) {
+
+            throw new ReglaNegocioException(
+                    "La tarifa mínima no puede ser negativa"
+            );
+        }
+
+        if (filtro.getTarifaMaxima() != null
+                && filtro.getTarifaMaxima()
+                .compareTo(BigDecimal.ZERO) < 0) {
+
+            throw new ReglaNegocioException(
+                    "La tarifa máxima no puede ser negativa"
+            );
+        }
+
+        if (filtro.getTarifaMinima() != null
+                && filtro.getTarifaMaxima() != null
+                && filtro.getTarifaMinima()
+                .compareTo(filtro.getTarifaMaxima()) > 0) {
+
+            throw new ReglaNegocioException(
+                    "La tarifa mínima no puede ser mayor que la tarifa máxima"
+            );
+        }
+    }
+
     private Servicio buscarServicio(Long id) {
 
         return servicioRepository
                 .findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No se encontró el servicio"
-                ));
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "No se encontró el servicio"
+                        )
+                );
     }
 
     private PerfilTrabajador buscarPerfilTrabajador(Long id) {
 
         return perfilTrabajadorRepository
                 .findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No se encontró el perfil del trabajador"
-                ));
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "No se encontró el perfil del trabajador"
+                        )
+                );
     }
 
     private Categoria buscarCategoriaActiva(Long id) {
 
-        Categoria categoria = categoriaRepository
-                .findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No se encontró la categoría"
-                ));
+        Categoria categoria =
+                categoriaRepository
+                        .findById(id)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "No se encontró la categoría"
+                                )
+                        );
 
-        if (!Boolean.TRUE.equals(categoria.getActivo())) {
+        if (!Boolean.TRUE.equals(
+                categoria.getActivo()
+        )) {
+
             throw new ReglaNegocioException(
                     "La categoría no está activa"
             );
@@ -316,7 +589,9 @@ public class ServicioService implements IServicioService {
     ) {
 
         if (tarifaMaxima != null
-                && tarifaMinima.compareTo(tarifaMaxima) > 0) {
+                && tarifaMinima.compareTo(
+                tarifaMaxima
+        ) > 0) {
 
             throw new ReglaNegocioException(
                     "La tarifa mínima no puede ser mayor "
@@ -337,9 +612,12 @@ public class ServicioService implements IServicioService {
 
         List<ZonaCobertura> zonasEncontradas =
                 zonaCoberturaRepository
-                        .findAllById(zonasCoberturaIds);
+                        .findAllById(
+                                zonasCoberturaIds
+                        );
 
-        if (zonasEncontradas.size() != zonasCoberturaIds.size()) {
+        if (zonasEncontradas.size()
+                != zonasCoberturaIds.size()) {
 
             throw new RecursoNoEncontradoException(
                     "No se encontraron todas las zonas de cobertura "
@@ -347,49 +625,104 @@ public class ServicioService implements IServicioService {
             );
         }
 
-        return new HashSet<>(zonasEncontradas);
+        return new HashSet<>(
+                zonasEncontradas
+        );
     }
 
-    private ServicioSalida convertirASalida(Servicio servicio) {
+    private ServicioSalida convertirASalida(
+            Servicio servicio
+    ) {
 
-        ServicioSalida salida = new ServicioSalida();
+        ServicioSalida salida =
+                new ServicioSalida();
 
         salida.setId(servicio.getId());
-        salida.setPerfilTrabajadorId(
-                servicio.getPerfilTrabajador().getId()
-        );
-        salida.setCategoriaId(
-                servicio.getCategoria().getId()
-        );
-        salida.setTitulo(servicio.getTitulo());
-        salida.setDescripcion(servicio.getDescripcion());
-        salida.setTarifaMinima(servicio.getTarifaMinima());
-        salida.setTarifaMaxima(servicio.getTarifaMaxima());
-        salida.setEstado(servicio.getEstado());
-        salida.setFechaCreacion(servicio.getFechaCreacion());
-        salida.setFechaActualizacion(servicio.getFechaActualizacion());
 
-        Set<Long> zonasIds = new java.util.LinkedHashSet<>();
+        salida.setPerfilTrabajadorId(
+                servicio
+                        .getPerfilTrabajador()
+                        .getId()
+        );
+
+        salida.setCategoriaId(
+                servicio
+                        .getCategoria()
+                        .getId()
+        );
+
+        salida.setTitulo(
+                servicio.getTitulo()
+        );
+
+        salida.setDescripcion(
+                servicio.getDescripcion()
+        );
+
+        salida.setTarifaMinima(
+                servicio.getTarifaMinima()
+        );
+
+        salida.setTarifaMaxima(
+                servicio.getTarifaMaxima()
+        );
+
+        salida.setEstado(
+                servicio.getEstado()
+        );
+
+        salida.setFechaCreacion(
+                servicio.getFechaCreacion()
+        );
+
+        salida.setFechaActualizacion(
+                servicio.getFechaActualizacion()
+        );
+
+        Set<Long> zonasIds =
+                new java.util.LinkedHashSet<>();
 
         for (ZonaCobertura zona :
                 servicio.getZonasCobertura()) {
 
-            zonasIds.add(zona.getId());
+            zonasIds.add(
+                    zona.getId()
+            );
         }
 
-        salida.setZonasCoberturaIds(zonasIds);
+        salida.setZonasCoberturaIds(
+                zonasIds
+        );
 
         return salida;
+    }
+
+    private ServicioBusquedaSalida convertirABusquedaSalida(
+            Servicio servicio
+    ) {
+
+        return new ServicioBusquedaSalida(
+                servicio.getId(),
+                servicio.getTitulo(),
+                servicio.getCategoria().getId(),
+                servicio.getPerfilTrabajador().getId(),
+                servicio.getTarifaMinima(),
+                servicio.getTarifaMaxima()
+        );
     }
 
     private List<ServicioSalida> convertirLista(
             List<Servicio> servicios
     ) {
 
-        List<ServicioSalida> lista = new ArrayList<>();
+        List<ServicioSalida> lista =
+                new ArrayList<>();
 
         for (Servicio servicio : servicios) {
-            lista.add(convertirASalida(servicio));
+
+            lista.add(
+                    convertirASalida(servicio)
+            );
         }
 
         return lista;

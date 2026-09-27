@@ -1,9 +1,12 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoAprobar;
+import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoFiltroDTO;
 import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoGuardar;
 import com.connectaoficios.api.dtos.transaccionpago.TransaccionPagoSalida;
 import com.connectaoficios.api.enums.EstadoTransaccion;
+import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.servicios.interfaces.ITransaccionPagoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -15,6 +18,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -61,11 +66,88 @@ public class TransaccionPagoController {
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<Page<TransaccionPagoSalida>>
-    obtenerTodosPaginados(Pageable pageable) {
+    obtenerTodosPaginados(
+            Pageable pageable
+    ) {
 
         return ResponseEntity.ok(
                 transaccionPagoService
-                        .obtenerTodosPaginados(pageable)
+                        .obtenerTodosPaginados(
+                                pageable
+                        )
+        );
+    }
+
+    @GetMapping("/paginadas")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
+    public ResponseEntity<PaginaSalida<TransaccionPagoSalida>>
+    buscarConFiltros(
+            @RequestParam(required = false) Long promocionId,
+            @RequestParam(required = false) Long servicioId,
+            @RequestParam(required = false) Integer trabajadorId,
+            @RequestParam(required = false) EstadoTransaccion estado,
+            @RequestParam(required = false) String moneda,
+            @RequestParam(required = false) String referenciaExterna,
+            @RequestParam(required = false) BigDecimal montoMinimo,
+            @RequestParam(required = false) BigDecimal montoMaximo,
+            @RequestParam(required = false) LocalDateTime fechaDesde,
+            @RequestParam(required = false) LocalDateTime fechaHasta,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        TransaccionPagoFiltroDTO filtro =
+                new TransaccionPagoFiltroDTO();
+
+        filtro.setPromocionId(
+                promocionId
+        );
+
+        filtro.setServicioId(
+                servicioId
+        );
+
+        filtro.setTrabajadorId(
+                trabajadorId
+        );
+
+        filtro.setEstado(
+                estado
+        );
+
+        filtro.setMoneda(
+                moneda
+        );
+
+        filtro.setReferenciaExterna(
+                referenciaExterna
+        );
+
+        filtro.setMontoMinimo(
+                montoMinimo
+        );
+
+        filtro.setMontoMaximo(
+                montoMaximo
+        );
+
+        filtro.setFechaDesde(
+                fechaDesde
+        );
+
+        filtro.setFechaHasta(
+                fechaHasta
+        );
+
+        return ResponseEntity.ok(
+                transaccionPagoService
+                        .buscarConFiltros(
+                                filtro,
+                                page,
+                                size
+                        )
         );
     }
 
@@ -76,7 +158,8 @@ public class TransaccionPagoController {
     ) {
 
         return ResponseEntity.ok(
-                transaccionPagoService.obtenerPorId(id)
+                transaccionPagoService
+                        .obtenerPorId(id)
         );
     }
 
@@ -108,7 +191,9 @@ public class TransaccionPagoController {
 
         return ResponseEntity.ok(
                 transaccionPagoService
-                        .obtenerPorPromocion(promocionId)
+                        .obtenerPorPromocion(
+                                promocionId
+                        )
         );
     }
 
@@ -126,7 +211,9 @@ public class TransaccionPagoController {
 
         return ResponseEntity.ok(
                 transaccionPagoService
-                        .obtenerPorTrabajador(trabajadorId)
+                        .obtenerPorTrabajador(
+                                trabajadorId
+                        )
         );
     }
 
@@ -140,7 +227,11 @@ public class TransaccionPagoController {
     ) {
 
         return ResponseEntity.ok(
-                transaccionPagoService.aprobar(id, dto)
+                transaccionPagoService
+                        .aprobar(
+                                id,
+                                dto
+                        )
         );
     }
 
@@ -153,7 +244,8 @@ public class TransaccionPagoController {
     ) {
 
         return ResponseEntity.ok(
-                transaccionPagoService.rechazar(id)
+                transaccionPagoService
+                        .rechazar(id)
         );
     }
 
@@ -170,14 +262,23 @@ public class TransaccionPagoController {
                 );
 
         return ResponseEntity.ok(
-                transaccionPagoService.cancelar(
-                        id,
-                        trabajadorId
-                )
+                transaccionPagoService
+                        .cancelar(
+                                id,
+                                trabajadorId
+                        )
         );
     }
 
-    private Integer obtenerIdDeUsuario(Jwt jwt) {
+    private Integer obtenerIdDeUsuario(
+            Jwt jwt
+    ) {
+
+        if (jwt == null) {
+            throw new ReglaNegocioException(
+                    "No se pudo identificar al usuario autenticado"
+            );
+        }
 
         String id =
                 jwt.getClaimAsString(
@@ -188,6 +289,18 @@ public class TransaccionPagoController {
             id = jwt.getSubject();
         }
 
-        return Integer.valueOf(id);
+        if (id == null || id.isBlank()) {
+            throw new ReglaNegocioException(
+                    "No se pudo identificar al usuario autenticado"
+            );
+        }
+
+        try {
+            return Integer.valueOf(id);
+        } catch (NumberFormatException exception) {
+            throw new ReglaNegocioException(
+                    "El identificador del usuario autenticado no es válido"
+            );
+        }
     }
 }

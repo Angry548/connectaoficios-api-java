@@ -1,5 +1,7 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioFiltroDTO;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioGuardar;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioModificar;
 import com.connectaoficios.api.dtos.disponibilidad.DisponibilidadServicioSalida;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -22,63 +25,119 @@ public class DisponibilidadServicioController {
     public DisponibilidadServicioController(
             IDisponibilidadServicioService disponibilidadService
     ) {
-        this.disponibilidadService = disponibilidadService;
+        this.disponibilidadService =
+                disponibilidadService;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('TRABAJADOR')")
     public ResponseEntity<DisponibilidadServicioSalida> guardar(
-            @Valid @RequestBody
-            DisponibilidadServicioGuardar disponibilidadGuardar
+            @Valid @RequestBody DisponibilidadServicioGuardar disponibilidadGuardar
     ) {
 
         DisponibilidadServicioSalida disponibilidad =
-                disponibilidadService.guardar(disponibilidadGuardar);
+                disponibilidadService.guardar(
+                        disponibilidadGuardar
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(disponibilidad);
     }
 
+    @GetMapping("/paginadas")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PaginaSalida<DisponibilidadServicioSalida>> buscarConFiltros(
+            @RequestParam(required = false) Long servicioId,
+            @RequestParam(required = false) DiaSemana diaSemana,
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(required = false) LocalTime horaDesde,
+            @RequestParam(required = false) LocalTime horaHasta,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        DisponibilidadServicioFiltroDTO filtro =
+                new DisponibilidadServicioFiltroDTO();
+
+        filtro.setServicioId(
+                servicioId
+        );
+
+        filtro.setDiaSemana(
+                diaSemana
+        );
+
+        filtro.setActivo(
+                activo
+        );
+
+        filtro.setHoraDesde(
+                horaDesde
+        );
+
+        filtro.setHoraHasta(
+                horaHasta
+        );
+
+        return ResponseEntity.ok(
+                disponibilidadService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                )
+        );
+    }
+
     @GetMapping("/servicio/{servicioId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<DisponibilidadServicioSalida>>
-    listarPorServicio(
+    public ResponseEntity<List<DisponibilidadServicioSalida>> listarPorServicio(
             @PathVariable Long servicioId
     ) {
 
         List<DisponibilidadServicioSalida> disponibilidades =
                 disponibilidadService
-                        .listarPorServicio(servicioId);
+                        .listarPorServicio(
+                                servicioId
+                        );
 
-        return ResponseEntity.ok(disponibilidades);
+        return ResponseEntity.ok(
+                disponibilidades
+        );
     }
 
     @GetMapping("/servicio/{servicioId}/activas")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<DisponibilidadServicioSalida>>
-    listarActivasPorServicio(
+    public ResponseEntity<List<DisponibilidadServicioSalida>> listarActivasPorServicio(
             @PathVariable Long servicioId
     ) {
 
         List<DisponibilidadServicioSalida> disponibilidades =
                 disponibilidadService
-                        .listarActivasPorServicio(servicioId);
+                        .listarActivasPorServicio(
+                                servicioId
+                        );
 
-        return ResponseEntity.ok(disponibilidades);
+        return ResponseEntity.ok(
+                disponibilidades
+        );
     }
 
     @GetMapping("/dia/{diaSemana}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<DisponibilidadServicioSalida>>
-    buscarPorDia(
+    public ResponseEntity<List<DisponibilidadServicioSalida>> buscarPorDia(
             @PathVariable DiaSemana diaSemana
     ) {
 
         List<DisponibilidadServicioSalida> disponibilidades =
-                disponibilidadService.buscarPorDia(diaSemana);
+                disponibilidadService
+                        .buscarPorDia(
+                                diaSemana
+                        );
 
-        return ResponseEntity.ok(disponibilidades);
+        return ResponseEntity.ok(
+                disponibilidades
+        );
     }
 
     @GetMapping("/{id}")
@@ -88,17 +147,21 @@ public class DisponibilidadServicioController {
     ) {
 
         DisponibilidadServicioSalida disponibilidad =
-                disponibilidadService.obtenerPorId(id);
+                disponibilidadService
+                        .obtenerPorId(
+                                id
+                        );
 
-        return ResponseEntity.ok(disponibilidad);
+        return ResponseEntity.ok(
+                disponibilidad
+        );
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('TRABAJADOR')")
     public ResponseEntity<DisponibilidadServicioSalida> modificar(
             @PathVariable Long id,
-            @Valid @RequestBody
-            DisponibilidadServicioModificar disponibilidadModificar
+            @Valid @RequestBody DisponibilidadServicioModificar disponibilidadModificar
     ) {
 
         DisponibilidadServicioSalida disponibilidad =
@@ -107,7 +170,9 @@ public class DisponibilidadServicioController {
                         disponibilidadModificar
                 );
 
-        return ResponseEntity.ok(disponibilidad);
+        return ResponseEntity.ok(
+                disponibilidad
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -116,8 +181,12 @@ public class DisponibilidadServicioController {
             @PathVariable Long id
     ) {
 
-        disponibilidadService.eliminar(id);
+        disponibilidadService.eliminar(
+                id
+        );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

@@ -1,5 +1,8 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.zona.ZonaCoberturaBusquedaSalida;
+import com.connectaoficios.api.dtos.zona.ZonaCoberturaFiltroDTO;
 import com.connectaoficios.api.dtos.zona.ZonaCoberturaGuardar;
 import com.connectaoficios.api.dtos.zona.ZonaCoberturaModificar;
 import com.connectaoficios.api.dtos.zona.ZonaCoberturaSalida;
@@ -21,7 +24,8 @@ public class ZonaCoberturaController {
     public ZonaCoberturaController(
             IZonaCoberturaService zonaCoberturaService
     ) {
-        this.zonaCoberturaService = zonaCoberturaService;
+        this.zonaCoberturaService =
+                zonaCoberturaService;
     }
 
     @PostMapping
@@ -31,7 +35,9 @@ public class ZonaCoberturaController {
     ) {
 
         ZonaCoberturaSalida zona =
-                zonaCoberturaService.guardar(zonaGuardar);
+                zonaCoberturaService.guardar(
+                        zonaGuardar
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -45,7 +51,9 @@ public class ZonaCoberturaController {
         List<ZonaCoberturaSalida> zonas =
                 zonaCoberturaService.listarActivas();
 
-        return ResponseEntity.ok(zonas);
+        return ResponseEntity.ok(
+                zonas
+        );
     }
 
     @GetMapping("/todas")
@@ -55,7 +63,68 @@ public class ZonaCoberturaController {
         List<ZonaCoberturaSalida> zonas =
                 zonaCoberturaService.listar();
 
-        return ResponseEntity.ok(zonas);
+        return ResponseEntity.ok(
+                zonas
+        );
+    }
+
+    @GetMapping("/paginadas")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PaginaSalida<ZonaCoberturaSalida>> listarPaginadas(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) String departamento,
+            @RequestParam(required = false) String municipio,
+            @RequestParam(required = false) String localidad,
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        ZonaCoberturaFiltroDTO filtro =
+                new ZonaCoberturaFiltroDTO();
+
+        filtro.setTexto(
+                texto
+        );
+
+        filtro.setDepartamento(
+                departamento
+        );
+
+        filtro.setMunicipio(
+                municipio
+        );
+
+        filtro.setLocalidad(
+                localidad
+        );
+
+        filtro.setActivo(
+                activo
+        );
+
+        return ResponseEntity.ok(
+                zonaCoberturaService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                )
+        );
+    }
+
+    @GetMapping("/buscar")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ZonaCoberturaBusquedaSalida>> buscar(
+            @RequestParam String texto,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+
+        return ResponseEntity.ok(
+                zonaCoberturaService.buscarParaAutocomplete(
+                        texto,
+                        limit
+                )
+        );
     }
 
     @GetMapping("/departamento/{departamento}")
@@ -66,9 +135,13 @@ public class ZonaCoberturaController {
 
         List<ZonaCoberturaSalida> zonas =
                 zonaCoberturaService
-                        .buscarPorDepartamento(departamento);
+                        .buscarPorDepartamento(
+                                departamento
+                        );
 
-        return ResponseEntity.ok(zonas);
+        return ResponseEntity.ok(
+                zonas
+        );
     }
 
     @GetMapping("/municipio/{municipio}")
@@ -79,9 +152,13 @@ public class ZonaCoberturaController {
 
         List<ZonaCoberturaSalida> zonas =
                 zonaCoberturaService
-                        .buscarPorMunicipio(municipio);
+                        .buscarPorMunicipio(
+                                municipio
+                        );
 
-        return ResponseEntity.ok(zonas);
+        return ResponseEntity.ok(
+                zonas
+        );
     }
 
     @GetMapping("/{id}")
@@ -91,9 +168,13 @@ public class ZonaCoberturaController {
     ) {
 
         ZonaCoberturaSalida zona =
-                zonaCoberturaService.obtenerPorId(id);
+                zonaCoberturaService.obtenerPorId(
+                        id
+                );
 
-        return ResponseEntity.ok(zona);
+        return ResponseEntity.ok(
+                zona
+        );
     }
 
     @PutMapping("/{id}")
@@ -104,9 +185,14 @@ public class ZonaCoberturaController {
     ) {
 
         ZonaCoberturaSalida zona =
-                zonaCoberturaService.modificar(id, zonaModificar);
+                zonaCoberturaService.modificar(
+                        id,
+                        zonaModificar
+                );
 
-        return ResponseEntity.ok(zona);
+        return ResponseEntity.ok(
+                zona
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -115,8 +201,12 @@ public class ZonaCoberturaController {
             @PathVariable Long id
     ) {
 
-        zonaCoberturaService.eliminar(id);
+        zonaCoberturaService.eliminar(
+                id
+        );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

@@ -1,5 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.conversacion.ConversacionFiltroDTO;
 import com.connectaoficios.api.dtos.conversacion.ConversacionGuardar;
 import com.connectaoficios.api.dtos.conversacion.ConversacionSalida;
 
@@ -18,5 +20,12 @@ public interface IConversacionService {
     ConversacionSalida obtenerPorSolicitud(
             Long solicitudId,
             Integer usuarioId
+    );
+
+    PaginaSalida<ConversacionSalida> buscarConversaciones(
+            ConversacionFiltroDTO filtro,
+            Integer usuarioId,
+            int pagina,
+            int tamanio
     );
 }

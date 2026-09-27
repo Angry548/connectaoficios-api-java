@@ -3,6 +3,8 @@ package com.connectaoficios.api.repositorios;
 import com.connectaoficios.api.enums.DiaSemana;
 import com.connectaoficios.api.enums.EstadoServicio;
 import com.connectaoficios.api.modelos.Servicio;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,6 +34,22 @@ public interface IServicioRepository
             Long categoriaId
     );
 
+
+    Page<Servicio> findAllByEliminadoFalseAndEstado(
+            EstadoServicio estado,
+            Pageable pageable
+    );
+
+    Page<Servicio> findAllByPerfilTrabajadorIdAndEliminadoFalse(
+            Long perfilTrabajadorId,
+            Pageable pageable
+    );
+
+    Page<Servicio> findAllByCategoriaIdAndEliminadoFalse(
+            Long categoriaId,
+            Pageable pageable
+    );
+
     @Query("""
             SELECT DISTINCT s
             FROM Servicio s
@@ -40,7 +58,31 @@ public interface IServicioRepository
               AND z.id = :zonaId
             ORDER BY s.fechaCreacion DESC
             """)
-    List<Servicio> findAllByZonaCoberturaId(@Param("zonaId") Long zonaId);
+    List<Servicio> findAllByZonaCoberturaId(
+            @Param("zonaId") Long zonaId
+    );
+
+    @Query(
+            value = """
+                    SELECT DISTINCT s
+                    FROM Servicio s
+                    JOIN s.zonasCobertura z
+                    WHERE s.eliminado = false
+                      AND z.id = :zonaId
+                    """,
+            countQuery = """
+                    SELECT COUNT(DISTINCT s.id)
+                    FROM Servicio s
+                    JOIN s.zonasCobertura z
+                    WHERE s.eliminado = false
+                      AND z.id = :zonaId
+                    """
+    )
+    Page<Servicio> findAllByZonaCoberturaId(
+            @Param("zonaId") Long zonaId,
+            Pageable pageable
+    );
+
 
     @Query("""
             SELECT DISTINCT s
@@ -63,5 +105,140 @@ public interface IServicioRepository
             @Param("diaSemana") DiaSemana diaSemana,
             @Param("tarifaMinima") BigDecimal tarifaMinima,
             @Param("tarifaMaxima") BigDecimal tarifaMaxima
+    );
+
+    @Query(
+            value = """
+                    SELECT DISTINCT s
+                    FROM Servicio s
+                    LEFT JOIN s.zonasCobertura z
+                    LEFT JOIN DisponibilidadServicio d
+                        ON d.servicio.id = s.id
+                    WHERE s.eliminado = false
+
+                      AND (
+                            :texto IS NULL
+                            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))
+                          )
+
+                      AND (
+                            :perfilTrabajadorId IS NULL
+                            OR s.perfilTrabajador.id = :perfilTrabajadorId
+                          )
+
+                      AND (
+                            :categoriaId IS NULL
+                            OR s.categoria.id = :categoriaId
+                          )
+
+                      AND (
+                            :zonaId IS NULL
+                            OR z.id = :zonaId
+                          )
+
+                      AND (
+                            :diaSemana IS NULL
+                            OR (
+                                d.diaSemana = :diaSemana
+                                AND d.activo = true
+                            )
+                          )
+
+                      AND (
+                            :estado IS NULL
+                            OR s.estado = :estado
+                          )
+
+                      AND (
+                            :tarifaMinima IS NULL
+                            OR s.tarifaMinima >= :tarifaMinima
+                          )
+
+                      AND (
+                            :tarifaMaxima IS NULL
+                            OR s.tarifaMinima <= :tarifaMaxima
+                          )
+                    """,
+            countQuery = """
+                    SELECT COUNT(DISTINCT s.id)
+                    FROM Servicio s
+                    LEFT JOIN s.zonasCobertura z
+                    LEFT JOIN DisponibilidadServicio d
+                        ON d.servicio.id = s.id
+                    WHERE s.eliminado = false
+
+                      AND (
+                            :texto IS NULL
+                            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))
+                          )
+
+                      AND (
+                            :perfilTrabajadorId IS NULL
+                            OR s.perfilTrabajador.id = :perfilTrabajadorId
+                          )
+
+                      AND (
+                            :categoriaId IS NULL
+                            OR s.categoria.id = :categoriaId
+                          )
+
+                      AND (
+                            :zonaId IS NULL
+                            OR z.id = :zonaId
+                          )
+
+                      AND (
+                            :diaSemana IS NULL
+                            OR (
+                                d.diaSemana = :diaSemana
+                                AND d.activo = true
+                            )
+                          )
+
+                      AND (
+                            :estado IS NULL
+                            OR s.estado = :estado
+                          )
+
+                      AND (
+                            :tarifaMinima IS NULL
+                            OR s.tarifaMinima >= :tarifaMinima
+                          )
+
+                      AND (
+                            :tarifaMaxima IS NULL
+                            OR s.tarifaMinima <= :tarifaMaxima
+                          )
+                    """
+    )
+    Page<Servicio> buscarConFiltrosPaginado(
+            @Param("texto") String texto,
+            @Param("perfilTrabajadorId") Long perfilTrabajadorId,
+            @Param("categoriaId") Long categoriaId,
+            @Param("zonaId") Long zonaId,
+            @Param("diaSemana") DiaSemana diaSemana,
+            @Param("estado") EstadoServicio estado,
+            @Param("tarifaMinima") BigDecimal tarifaMinima,
+            @Param("tarifaMaxima") BigDecimal tarifaMaxima,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT s
+            FROM Servicio s
+            WHERE s.eliminado = false
+              AND s.estado = :estado
+              AND (
+                    LOWER(s.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))
+                    OR LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))
+                  )
+            ORDER BY s.titulo ASC
+            """)
+    List<Servicio> buscarParaAutocomplete(
+            @Param("texto") String texto,
+            @Param("estado") EstadoServicio estado,
+            Pageable pageable
     );
 }

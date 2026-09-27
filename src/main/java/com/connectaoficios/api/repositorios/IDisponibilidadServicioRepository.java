@@ -2,6 +2,8 @@ package com.connectaoficios.api.repositorios;
 
 import com.connectaoficios.api.enums.DiaSemana;
 import com.connectaoficios.api.modelos.DisponibilidadServicio;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -76,5 +78,66 @@ public interface IDisponibilidadServicioRepository
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFin") LocalTime horaFin,
             @Param("disponibilidadId") Long disponibilidadId
+    );
+
+    @Query(
+            value = """
+                    SELECT d
+                    FROM DisponibilidadServicio d
+                    WHERE
+                        (
+                            :servicioId IS NULL
+                            OR d.servicio.id = :servicioId
+                        )
+                        AND (
+                            :diaSemana IS NULL
+                            OR d.diaSemana = :diaSemana
+                        )
+                        AND (
+                            :activo IS NULL
+                            OR d.activo = :activo
+                        )
+                        AND (
+                            :horaDesde IS NULL
+                            OR d.horaInicio >= :horaDesde
+                        )
+                        AND (
+                            :horaHasta IS NULL
+                            OR d.horaFin <= :horaHasta
+                        )
+                    """,
+            countQuery = """
+                    SELECT COUNT(d)
+                    FROM DisponibilidadServicio d
+                    WHERE
+                        (
+                            :servicioId IS NULL
+                            OR d.servicio.id = :servicioId
+                        )
+                        AND (
+                            :diaSemana IS NULL
+                            OR d.diaSemana = :diaSemana
+                        )
+                        AND (
+                            :activo IS NULL
+                            OR d.activo = :activo
+                        )
+                        AND (
+                            :horaDesde IS NULL
+                            OR d.horaInicio >= :horaDesde
+                        )
+                        AND (
+                            :horaHasta IS NULL
+                            OR d.horaFin <= :horaHasta
+                        )
+                    """
+    )
+    Page<DisponibilidadServicio> buscarConFiltros(
+            @Param("servicioId") Long servicioId,
+            @Param("diaSemana") DiaSemana diaSemana,
+            @Param("activo") Boolean activo,
+            @Param("horaDesde") LocalTime horaDesde,
+            @Param("horaHasta") LocalTime horaHasta,
+            Pageable pageable
     );
 }

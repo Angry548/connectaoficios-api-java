@@ -1,8 +1,11 @@
 package com.connectaoficios.api.controladores;
 
+import com.connectaoficios.api.dtos.categoria.CategoriaBusquedaSalida;
+import com.connectaoficios.api.dtos.categoria.CategoriaFiltroDTO;
 import com.connectaoficios.api.dtos.categoria.CategoriaGuardar;
 import com.connectaoficios.api.dtos.categoria.CategoriaModificar;
 import com.connectaoficios.api.dtos.categoria.CategoriaSalida;
+import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.servicios.interfaces.ICategoriaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,18 +21,25 @@ public class CategoriaController {
 
     private final ICategoriaService categoriaService;
 
-    public CategoriaController(ICategoriaService categoriaService) {
-        this.categoriaService = categoriaService;
+    public CategoriaController(
+            ICategoriaService categoriaService
+    ) {
+        this.categoriaService =
+                categoriaService;
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
     public ResponseEntity<CategoriaSalida> guardar(
             @Valid @RequestBody CategoriaGuardar categoriaGuardar
     ) {
 
         CategoriaSalida categoria =
-                categoriaService.guardar(categoriaGuardar);
+                categoriaService.guardar(
+                        categoriaGuardar
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -43,17 +53,67 @@ public class CategoriaController {
         List<CategoriaSalida> categorias =
                 categoriaService.listarActivas();
 
-        return ResponseEntity.ok(categorias);
+        return ResponseEntity.ok(
+                categorias
+        );
     }
 
     @GetMapping("/todas")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
     public ResponseEntity<List<CategoriaSalida>> listarTodas() {
 
         List<CategoriaSalida> categorias =
                 categoriaService.listar();
 
-        return ResponseEntity.ok(categorias);
+        return ResponseEntity.ok(
+                categorias
+        );
+    }
+
+    @GetMapping("/paginadas")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PaginaSalida<CategoriaSalida>> listarPaginadas(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+
+        CategoriaFiltroDTO filtro =
+                new CategoriaFiltroDTO();
+
+        filtro.setTexto(
+                texto
+        );
+
+        filtro.setActivo(
+                activo
+        );
+
+        return ResponseEntity.ok(
+                categoriaService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                )
+        );
+    }
+
+    @GetMapping("/buscar")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CategoriaBusquedaSalida>> buscar(
+            @RequestParam String texto,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+
+        return ResponseEntity.ok(
+                categoriaService.buscarParaAutocomplete(
+                        texto,
+                        limit
+                )
+        );
     }
 
     @GetMapping("/{id}")
@@ -63,32 +123,49 @@ public class CategoriaController {
     ) {
 
         CategoriaSalida categoria =
-                categoriaService.obtenerPorId(id);
+                categoriaService.obtenerPorId(
+                        id
+                );
 
-        return ResponseEntity.ok(categoria);
+        return ResponseEntity.ok(
+                categoria
+        );
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
     public ResponseEntity<CategoriaSalida> modificar(
             @PathVariable Long id,
             @Valid @RequestBody CategoriaModificar categoriaModificar
     ) {
 
         CategoriaSalida categoria =
-                categoriaService.modificar(id, categoriaModificar);
+                categoriaService.modificar(
+                        id,
+                        categoriaModificar
+                );
 
-        return ResponseEntity.ok(categoria);
+        return ResponseEntity.ok(
+                categoria
+        );
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
+    @PreAuthorize(
+            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+    )
     public ResponseEntity<Void> eliminar(
             @PathVariable Long id
     ) {
 
-        categoriaService.eliminar(id);
+        categoriaService.eliminar(
+                id
+        );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

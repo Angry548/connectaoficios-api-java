@@ -22,10 +22,16 @@ public class ReporteGuardar {
     private TipoReporte tipo;
 
     @NotBlank(message = "El motivo es obligatorio")
-    @Size(max = 255, message = "El motivo no puede superar los 255 caracteres")
+    @Size(
+            max = 200,
+            message = "El motivo no puede superar los 200 caracteres"
+    )
     private String motivo;
 
     @NotBlank(message = "La descripción es obligatoria")
-    @Size(max = 2000, message = "La descripción no puede superar los 2000 caracteres")
+    @Size(
+            max = 2000,
+            message = "La descripción no puede superar los 2000 caracteres"
+    )
     private String descripcion;
 }
