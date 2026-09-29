@@ -25,7 +25,8 @@ class PerfilTrabajador {
     + obtenerPorTrabajadorId(trabajadorId: Integer): Optional<PerfilTrabajador>
     + guardar(m: PerfilTrabajador): PerfilTrabajador
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<PerfilTrabajador>
+    + buscarConFiltros(filtro: PerfilTrabajadorFiltroDTO, pageable: Pageable): Page<PerfilTrabajador>
+    + buscar(texto: String, limite: Integer): List<PerfilTrabajador>
     + calcularPorcentajeCompletitud(): Integer
     + actualizarPerfil(): PerfilTrabajador
 }
@@ -40,7 +41,8 @@ class Categoria {
     + obtenerPorId(id: Long): Optional<Categoria>
     + guardar(m: Categoria): Categoria
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Categoria>
+    + buscarConFiltros(filtro: CategoriaFiltroDTO, pageable: Pageable): Page<Categoria>
+    + buscar(texto: String, limite: Integer): List<Categoria>
     + activar(): void
     + desactivar(): void
 }
@@ -56,8 +58,8 @@ class ZonaCobertura {
     + obtenerPorId(id: Long): Optional<ZonaCobertura>
     + guardar(m: ZonaCobertura): ZonaCobertura
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<ZonaCobertura>
-    + buscarPorTexto(texto: String): List<ZonaCobertura>
+    + buscarConFiltros(filtro: ZonaCoberturaFiltroDTO, pageable: Pageable): Page<ZonaCobertura>
+    + buscar(texto: String, limite: Integer): List<ZonaCobertura>
     + activar(): void
     + desactivar(): void
 }
@@ -80,7 +82,8 @@ class Servicio {
     + obtenerPorId(id: Long): Optional<Servicio>
     + guardar(m: Servicio): Servicio
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Servicio>
+    + buscarConFiltros(filtro: ServicioFiltroDTO, pageable: Pageable): Page<Servicio>
+    + buscar(texto: String, limite: Integer): List<Servicio>
     + activar(): void
     + desactivar(): void
     + eliminarLogicamente(): void
@@ -100,7 +103,7 @@ class DisponibilidadServicio {
     + obtenerPorId(id: Long): Optional<DisponibilidadServicio>
     + guardar(m: DisponibilidadServicio): DisponibilidadServicio
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<DisponibilidadServicio>
+    + buscarConFiltros(filtro: DisponibilidadServicioFiltroDTO, pageable: Pageable): Page<DisponibilidadServicio>
     + activar(): void
     + desactivar(): void
     + horarioValido(): Boolean
@@ -124,7 +127,7 @@ class SolicitudServicio {
     + obtenerPorId(id: Long): Optional<SolicitudServicio>
     + guardar(m: SolicitudServicio): SolicitudServicio
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<SolicitudServicio>
+    + buscarConFiltros(filtro: SolicitudServicioFiltroDTO, pageable: Pageable): Page<SolicitudServicio>
     + aceptar(): void
     + rechazar(): void
     + iniciar(): void
@@ -160,7 +163,7 @@ class Conversacion {
     + obtenerPorId(id: Long): Optional<Conversacion>
     + guardar(m: Conversacion): Conversacion
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Conversacion>
+    + buscarConFiltros(filtro: ConversacionFiltroDTO, pageable: Pageable): Page<Conversacion>
     + obtenerPorSolicitud(idSolicitud: Long): Optional<Conversacion>
     + puedeEnviarMensajes(): Boolean
     + esParticipante(usuarioId: Integer): Boolean
@@ -178,8 +181,9 @@ class Mensaje {
     + obtenerPorId(id: Long): Optional<Mensaje>
     + guardar(m: Mensaje): Mensaje
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Mensaje>
+    + buscarConFiltros(filtro: MensajeFiltroDTO, pageable: Pageable): Page<Mensaje>
     + obtenerPorConversacion(idConversacion: Long): List<Mensaje>
+    + contarNoLeidos(conversacionId: Long, usuarioId: Integer): Long
     + marcarComoLeido(): void
 }
 
@@ -216,7 +220,7 @@ class Resena {
     + obtenerPorId(id: Long): Optional<Resena>
     + guardar(m: Resena): Resena
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Resena>
+    + buscarConFiltros(filtro: ResenaFiltroDTO, pageable: Pageable): Page<Resena>
     + obtenerPorTrabajador(trabajadorId: Integer): List<Resena>
     + validarCalificacion(): Boolean
     + puedeEvaluar(): Boolean
@@ -241,7 +245,7 @@ class Reporte {
     + obtenerPorId(id: Long): Optional<Reporte>
     + guardar(m: Reporte): Reporte
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Reporte>
+    + buscarConFiltros(filtro: ReporteFiltroDTO, pageable: Pageable): Page<Reporte>
     + iniciarRevision(): void
     + resolver(resolucion: String, accion: String): void
     + rechazar(resolucion: String): void
@@ -259,7 +263,7 @@ class PlanPromocion {
     + obtenerPorId(id: Long): Optional<PlanPromocion>
     + guardar(m: PlanPromocion): PlanPromocion
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<PlanPromocion>
+    + buscarConFiltros(filtro: PlanPromocionFiltroDTO, pageable: Pageable): Page<PlanPromocion>
     + activar(): void
     + desactivar(): void
     + calcularFechaFin(fechaInicio: LocalDateTime): LocalDateTime
@@ -279,7 +283,7 @@ class Promocion {
     + obtenerPorId(id: Long): Optional<Promocion>
     + guardar(m: Promocion): Promocion
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<Promocion>
+    + buscarConFiltros(filtro: PromocionFiltroDTO, pageable: Pageable): Page<Promocion>
     + activar(): void
     + finalizar(): void
     + cancelar(): void
@@ -300,7 +304,7 @@ class TransaccionPago {
     + obtenerPorId(id: Long): Optional<TransaccionPago>
     + guardar(m: TransaccionPago): TransaccionPago
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<TransaccionPago>
+    + buscarConFiltros(filtro: TransaccionPagoFiltroDTO, pageable: Pageable): Page<TransaccionPago>
     + aprobar(referencia: String): void
     + rechazar(): void
     + cancelar(): void
@@ -321,7 +325,7 @@ class ReputacionTrabajador {
     + obtenerPorId(id: Long): Optional<ReputacionTrabajador>
     + guardar(m: ReputacionTrabajador): ReputacionTrabajador
     + eliminar(id: Long): void
-    + obtenerTodosPaginados(pageable: Pageable): Page<ReputacionTrabajador>
+    + buscarConFiltros(filtro: ReputacionTrabajadorFiltroDTO, pageable: Pageable): Page<ReputacionTrabajador>
     + recalcularPromedio(): BigDecimal
     + calcularPuntuacionRanking(): BigDecimal
     + actualizarInsignia(): void
@@ -404,10 +408,6 @@ enum InsigniaReputacion {
 }
 
 
-' =========================================================
-' RELACIONES Y ASOCIACIONES
-' =========================================================
-
 ZonaCobertura "1" -- "0..*" PerfilTrabajador : zona principal de >
 
 PerfilTrabajador "1" -- "0..*" Servicio : publica >
@@ -443,13 +443,9 @@ Promocion "1" -- "0..*" TransaccionPago : registra >
 PerfilTrabajador "1" -- "0..1" ReputacionTrabajador : posee >
 
 
-' =========================================================
-' RELACIONES CON ENUMS
-' =========================================================
-
 EstadoServicio "1" -- "0..*" Servicio : define estado >
 
-DiaSemana "1" -- "0..*" DisponibilidadServicio : define día >
+DiaSemana "1" -- "0..*" DisponibilidadServicio : define dia >
 
 EstadoSolicitud "1" -- "0..*" SolicitudServicio : define estado >
 
@@ -468,6 +464,6 @@ EstadoTransaccion "1" -- "0..*" TransaccionPago : define estado >
 InsigniaReputacion "1" -- "0..*" ReputacionTrabajador : asigna >
 
 
-note "trabajadorId, clienteId, remitenteId,\nusuarioDestinoId, usuarioReportanteId,\nusuarioReportadoId y administradorId\nson referencias a usuarios administrados\npor la API .NET; no son llaves foráneas MySQL." as N1
+note "trabajadorId, clienteId, remitenteId,\nusuarioDestinoId, usuarioReportanteId,\nusuarioReportadoId, cambiadoPorId y administradorId\nson referencias a usuarios administrados\npor la API .NET; no son llaves foraneas MySQL." as N1
 
 @enduml
