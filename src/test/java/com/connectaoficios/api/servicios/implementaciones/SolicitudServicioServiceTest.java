@@ -2,6 +2,7 @@ package com.connectaoficios.api.servicios.implementaciones;
 
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
+import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRechazar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRespuesta;
 import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.excepciones.RecursoNoEncontradoException;
@@ -48,6 +49,7 @@ class SolicitudServicioServiceTest {
 
         servicio = new Servicio();
         servicio.setId(1L);
+        servicio.setTitulo("Servicio de fontanería residencial");
 
         solicitud = new SolicitudServicio();
         solicitud.setId(1L);
@@ -64,7 +66,8 @@ class SolicitudServicioServiceTest {
     @Test
     void guardar_debeCrearSolicitudNueva() {
 
-        SolicitudServicioGuardar dto = new SolicitudServicioGuardar();
+        SolicitudServicioGuardar dto =
+                new SolicitudServicioGuardar();
 
         dto.setServicioId(1L);
         dto.setClienteId(100);
@@ -79,8 +82,11 @@ class SolicitudServicioServiceTest {
 
         when(solicitudRepository.save(any(SolicitudServicio.class)))
                 .thenAnswer(invocation -> {
-                    SolicitudServicio guardada = invocation.getArgument(0);
+                    SolicitudServicio guardada =
+                            invocation.getArgument(0);
+
                     guardada.setId(1L);
+
                     return guardada;
                 });
 
@@ -88,20 +94,46 @@ class SolicitudServicioServiceTest {
                 solicitudService.guardar(dto);
 
         assertNotNull(resultado);
-        assertEquals(1L, resultado.getIdSolicitud());
-        assertEquals(1L, resultado.getServicioId());
-        assertEquals(100, resultado.getClienteId());
-        assertEquals(200, resultado.getTrabajadorId());
+
+        assertEquals(
+                1L,
+                resultado.getIdSolicitud()
+        );
+
+        assertEquals(
+                1L,
+                resultado.getServicioId()
+        );
+
+        assertEquals(
+                "Servicio de fontanería residencial",
+                resultado.getServicioTitulo()
+        );
+
+        assertEquals(
+                100,
+                resultado.getClienteId()
+        );
+
+        assertEquals(
+                200,
+                resultado.getTrabajadorId()
+        );
+
         assertEquals(
                 EstadoSolicitud.PENDIENTE.name(),
                 resultado.getEstado()
         );
 
-        verify(servicioRepository, times(1))
-                .findByIdAndEliminadoFalse(1L);
+        verify(
+                servicioRepository,
+                times(1)
+        ).findByIdAndEliminadoFalse(1L);
 
-        verify(solicitudRepository, times(1))
-                .save(any(SolicitudServicio.class));
+        verify(
+                solicitudRepository,
+                times(1)
+        ).save(any(SolicitudServicio.class));
     }
 
     @Test
@@ -114,7 +146,22 @@ class SolicitudServicioServiceTest {
                 solicitudService.obtenerPorId(1L);
 
         assertNotNull(resultado);
-        assertEquals(1L, resultado.getIdSolicitud());
+
+        assertEquals(
+                1L,
+                resultado.getIdSolicitud()
+        );
+
+        assertEquals(
+                1L,
+                resultado.getServicioId()
+        );
+
+        assertEquals(
+                "Servicio de fontanería residencial",
+                resultado.getServicioTitulo()
+        );
+
         assertEquals(
                 "Calle Falsa 123",
                 resultado.getDireccionServicio()
@@ -131,14 +178,19 @@ class SolicitudServicioServiceTest {
                 RecursoNoEncontradoException.class,
                 () -> solicitudService.obtenerPorId(99L)
         );
-    }
 
-    // --- PRUEBAS DE TRANSICIONES DE ESTADO VÁLIDAS ---
+        verify(
+                solicitudRepository,
+                times(1)
+        ).findById(99L);
+    }
 
     @Test
     void aceptar_debeCambiarEstadoAAceptada() {
 
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        solicitud.setEstado(
+                EstadoSolicitud.PENDIENTE
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -150,19 +202,31 @@ class SolicitudServicioServiceTest {
                 solicitudService.aceptar(1L);
 
         assertNotNull(resultado);
+
         assertEquals(
                 EstadoSolicitud.ACEPTADA.name(),
                 resultado.getEstado()
         );
 
-        verify(solicitudRepository, times(1))
-                .save(solicitud);
+        verify(
+                solicitudRepository,
+                times(1)
+        ).save(solicitud);
     }
 
     @Test
-    void rechazar_debeCambiarEstadoARechazada() {
+    void rechazar_debeCambiarEstadoARechazadaYGuardarMotivo() {
 
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        SolicitudServicioRechazar dto =
+                new SolicitudServicioRechazar();
+
+        dto.setMotivoRechazo(
+                "No tengo disponibilidad para la fecha solicitada"
+        );
+
+        solicitud.setEstado(
+                EstadoSolicitud.PENDIENTE
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -171,22 +235,40 @@ class SolicitudServicioServiceTest {
                 .thenReturn(solicitud);
 
         SolicitudServicioRespuesta resultado =
-                solicitudService.rechazar(1L);
+                solicitudService.rechazar(
+                        1L,
+                        dto
+                );
 
         assertNotNull(resultado);
+
         assertEquals(
                 EstadoSolicitud.RECHAZADA.name(),
                 resultado.getEstado()
         );
 
-        verify(solicitudRepository, times(1))
-                .save(solicitud);
+        assertEquals(
+                "No tengo disponibilidad para la fecha solicitada",
+                resultado.getMotivoRechazo()
+        );
+
+        assertEquals(
+                "No tengo disponibilidad para la fecha solicitada",
+                solicitud.getMotivoRechazo()
+        );
+
+        verify(
+                solicitudRepository,
+                times(1)
+        ).save(solicitud);
     }
 
     @Test
     void iniciar_debeCambiarEstadoAEnProceso() {
 
-        solicitud.setEstado(EstadoSolicitud.ACEPTADA);
+        solicitud.setEstado(
+                EstadoSolicitud.ACEPTADA
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -198,19 +280,24 @@ class SolicitudServicioServiceTest {
                 solicitudService.iniciar(1L);
 
         assertNotNull(resultado);
+
         assertEquals(
                 EstadoSolicitud.EN_PROCESO.name(),
                 resultado.getEstado()
         );
 
-        verify(solicitudRepository, times(1))
-                .save(solicitud);
+        verify(
+                solicitudRepository,
+                times(1)
+        ).save(solicitud);
     }
 
     @Test
     void completar_debeCambiarEstadoACompletada() {
 
-        solicitud.setEstado(EstadoSolicitud.EN_PROCESO);
+        solicitud.setEstado(
+                EstadoSolicitud.EN_PROCESO
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -222,13 +309,16 @@ class SolicitudServicioServiceTest {
                 solicitudService.completar(1L);
 
         assertNotNull(resultado);
+
         assertEquals(
                 EstadoSolicitud.COMPLETADA.name(),
                 resultado.getEstado()
         );
 
-        verify(solicitudRepository, times(1))
-                .save(solicitud);
+        verify(
+                solicitudRepository,
+                times(1)
+        ).save(solicitud);
     }
 
     @Test
@@ -241,7 +331,9 @@ class SolicitudServicioServiceTest {
                 "El cliente no estará disponible"
         );
 
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        solicitud.setEstado(
+                EstadoSolicitud.PENDIENTE
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -250,9 +342,13 @@ class SolicitudServicioServiceTest {
                 .thenReturn(solicitud);
 
         SolicitudServicioRespuesta resultado =
-                solicitudService.cancelar(1L, dto);
+                solicitudService.cancelar(
+                        1L,
+                        dto
+                );
 
         assertNotNull(resultado);
+
         assertEquals(
                 EstadoSolicitud.CANCELADA.name(),
                 resultado.getEstado()
@@ -263,16 +359,49 @@ class SolicitudServicioServiceTest {
                 resultado.getMotivoCancelacion()
         );
 
-        verify(solicitudRepository, times(1))
-                .save(solicitud);
+        verify(
+                solicitudRepository,
+                times(1)
+        ).save(solicitud);
     }
 
-    // --- PRUEBAS DE TRANSICIONES INVÁLIDAS ---
+    @Test
+    void rechazar_debeLanzarExcepcion_cuandoSolicitudNoEstaPendiente() {
+
+        SolicitudServicioRechazar dto =
+                new SolicitudServicioRechazar();
+
+        dto.setMotivoRechazo(
+                "No tengo disponibilidad"
+        );
+
+        solicitud.setEstado(
+                EstadoSolicitud.ACEPTADA
+        );
+
+        when(solicitudRepository.findById(1L))
+                .thenReturn(Optional.of(solicitud));
+
+        assertThrows(
+                ReglaNegocioException.class,
+                () -> solicitudService.rechazar(
+                        1L,
+                        dto
+                )
+        );
+
+        verify(
+                solicitudRepository,
+                never()
+        ).save(any(SolicitudServicio.class));
+    }
 
     @Test
     void iniciar_debeLanzarExcepcion_cuandoSolicitudEstaPendiente() {
 
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        solicitud.setEstado(
+                EstadoSolicitud.PENDIENTE
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -291,7 +420,9 @@ class SolicitudServicioServiceTest {
     @Test
     void completar_debeLanzarExcepcion_cuandoSolicitudEstaPendiente() {
 
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        solicitud.setEstado(
+                EstadoSolicitud.PENDIENTE
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -310,7 +441,9 @@ class SolicitudServicioServiceTest {
     @Test
     void aceptar_debeLanzarExcepcion_cuandoSolicitudYaEstaCompletada() {
 
-        solicitud.setEstado(EstadoSolicitud.COMPLETADA);
+        solicitud.setEstado(
+                EstadoSolicitud.COMPLETADA
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
@@ -336,14 +469,19 @@ class SolicitudServicioServiceTest {
                 "Intento de cancelación invalido"
         );
 
-        solicitud.setEstado(EstadoSolicitud.RECHAZADA);
+        solicitud.setEstado(
+                EstadoSolicitud.RECHAZADA
+        );
 
         when(solicitudRepository.findById(1L))
                 .thenReturn(Optional.of(solicitud));
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> solicitudService.cancelar(1L, dto)
+                () -> solicitudService.cancelar(
+                        1L,
+                        dto
+                )
         );
 
         verify(
@@ -351,8 +489,6 @@ class SolicitudServicioServiceTest {
                 never()
         ).save(any(SolicitudServicio.class));
     }
-
-    // --- PRUEBAS DE OPERACIONES AUXILIARES ---
 
     @Test
     void eliminar_debeBorrarSolicitudSiExiste() {
@@ -362,8 +498,10 @@ class SolicitudServicioServiceTest {
 
         solicitudService.eliminar(1L);
 
-        verify(solicitudRepository, times(1))
-                .delete(solicitud);
+        verify(
+                solicitudRepository,
+                times(1)
+        ).delete(solicitud);
     }
 
     @Test
@@ -373,15 +511,24 @@ class SolicitudServicioServiceTest {
                 .thenReturn(Optional.of(solicitud));
 
         assertTrue(
-                solicitudService.esParticipante(1L, 100)
+                solicitudService.esParticipante(
+                        1L,
+                        100
+                )
         );
 
         assertTrue(
-                solicitudService.esParticipante(1L, 200)
+                solicitudService.esParticipante(
+                        1L,
+                        200
+                )
         );
 
         assertFalse(
-                solicitudService.esParticipante(1L, 300)
+                solicitudService.esParticipante(
+                        1L,
+                        300
+                )
         );
     }
 }
