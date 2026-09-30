@@ -1,6 +1,7 @@
 package com.connectaoficios.api.controladores;
 
 import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRechazar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioFiltroDTO;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
@@ -179,11 +180,13 @@ public class SolicitudServicioController {
     @PatchMapping("/{id}/rechazar")
     @PreAuthorize("hasRole('TRABAJADOR')")
     public ResponseEntity<SolicitudServicioRespuesta> rechazar(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @Valid @RequestBody SolicitudServicioRechazar solicitudRechazar
     ) {
         return ResponseEntity.ok(
                 solicitudServicioService.rechazar(
-                        id
+                        id,
+                        solicitudRechazar
                 )
         );
     }

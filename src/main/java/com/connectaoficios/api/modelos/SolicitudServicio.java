@@ -53,6 +53,9 @@ public class SolicitudServicio {
     @Column(nullable = false, length = 20)
     private EstadoSolicitud estado = EstadoSolicitud.PENDIENTE;
 
+    @Column(name = "motivo_rechazo", length = 500)
+    private String motivoRechazo;
+
     @Column(name = "motivo_cancelacion", length = 500)
     private String motivoCancelacion;
 

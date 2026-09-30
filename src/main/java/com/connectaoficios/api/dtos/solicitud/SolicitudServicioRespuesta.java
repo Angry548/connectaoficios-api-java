@@ -31,6 +31,8 @@ public class SolicitudServicioRespuesta {
 
     private String estado;
 
+    private String motivoRechazo;
+
     private String motivoCancelacion;
 
     private LocalDateTime fechaCreacion;

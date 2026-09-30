@@ -5,6 +5,7 @@ import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioFiltroDTO;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRespuesta;
+import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRechazar;
 import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.excepciones.RecursoNoEncontradoException;
 import com.connectaoficios.api.excepciones.ReglaNegocioException;
@@ -287,7 +288,8 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Override
     @Transactional
     public SolicitudServicioRespuesta rechazar(
-            Long id
+            Long id,
+            SolicitudServicioRechazar dto
     ) {
         SolicitudServicio solicitud =
                 buscarPorId(id);
@@ -299,6 +301,10 @@ public class SolicitudServicioService implements ISolicitudServicioService {
 
         solicitud.setEstado(
                 EstadoSolicitud.RECHAZADA
+        );
+
+        solicitud.setMotivoRechazo(
+                dto.getMotivoRechazo().trim()
         );
 
         return convertirARespuesta(

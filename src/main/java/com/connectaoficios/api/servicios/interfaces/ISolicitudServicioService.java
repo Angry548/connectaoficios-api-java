@@ -1,6 +1,7 @@
 package com.connectaoficios.api.servicios.interfaces;
 
 import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRechazar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioFiltroDTO;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
@@ -55,7 +56,8 @@ public interface ISolicitudServicioService {
     );
 
     SolicitudServicioRespuesta rechazar(
-            Long id
+            Long id,
+            SolicitudServicioRechazar solicitudRechazar
     );
 
     SolicitudServicioRespuesta iniciar(
