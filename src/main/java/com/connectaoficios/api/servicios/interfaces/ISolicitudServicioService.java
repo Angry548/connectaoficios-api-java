@@ -30,11 +30,25 @@ public interface ISolicitudServicioService {
             Integer trabajadorId
     );
 
+    PaginaSalida<SolicitudServicioRespuesta> obtenerPorClientePaginadas(
+            Integer clienteId,
+            int pagina,
+            int tamanio
+    );
+
+    PaginaSalida<SolicitudServicioRespuesta> obtenerPorTrabajadorPaginadas(
+            Integer trabajadorId,
+            int pagina,
+            int tamanio
+    );
+
     SolicitudServicioRespuesta guardar(
             SolicitudServicioGuardar solicitudGuardar
     );
 
-    void eliminar(Long id);
+    void eliminar(
+            Long id
+    );
 
     SolicitudServicioRespuesta aceptar(
             Long id

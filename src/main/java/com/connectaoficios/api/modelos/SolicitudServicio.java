@@ -27,17 +27,9 @@ public class SolicitudServicio {
     )
     private Servicio servicio;
 
-    /*
-     * ID externo del usuario Cliente proveniente de la API .NET.
-     * No constituye una llave foránea en MySQL.
-     */
     @Column(name = "cliente_id", nullable = false)
     private Integer clienteId;
 
-    /*
-     * ID externo del usuario Trabajador proveniente de la API .NET.
-     * No constituye una llave foránea en MySQL.
-     */
     @Column(name = "trabajador_id", nullable = false)
     private Integer trabajadorId;
 
@@ -50,7 +42,11 @@ public class SolicitudServicio {
     @Column(nullable = false, length = 500)
     private String direccion;
 
-    @Column(name = "descripcion_trabajo", nullable = false, length = 2000)
+    @Column(
+            name = "descripcion_trabajo",
+            nullable = false,
+            length = 2000
+    )
     private String descripcionTrabajo;
 
     @Enumerated(EnumType.STRING)
@@ -60,10 +56,17 @@ public class SolicitudServicio {
     @Column(name = "motivo_cancelacion", length = 500)
     private String motivoCancelacion;
 
-    @Column(name = "fecha_creacion", nullable = false, updatable = false)
+    @Column(
+            name = "fecha_creacion",
+            nullable = false,
+            updatable = false
+    )
     private LocalDateTime fechaCreacion;
 
-    @Column(name = "fecha_actualizacion", nullable = false)
+    @Column(
+            name = "fecha_actualizacion",
+            nullable = false
+    )
     private LocalDateTime fechaActualizacion;
 
     @PrePersist

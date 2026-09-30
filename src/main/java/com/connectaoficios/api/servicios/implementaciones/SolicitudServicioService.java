@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,7 +43,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     @Override
     @Transactional(readOnly = true)
     public List<SolicitudServicioRespuesta> obtenerTodas() {
-
         return solicitudRepository
                 .findAll()
                 .stream()
@@ -57,7 +55,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public SolicitudServicioRespuesta obtenerPorId(
             Long id
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -73,7 +70,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             int pagina,
             int tamanio
     ) {
-
         validarRangoFechas(
                 filtro.getFechaDesde(),
                 filtro.getFechaHasta()
@@ -114,7 +110,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public List<SolicitudServicioRespuesta> obtenerPorCliente(
             Integer clienteId
     ) {
-
         return solicitudRepository
                 .findByClienteId(
                         clienteId
@@ -129,7 +124,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public List<SolicitudServicioRespuesta> obtenerPorTrabajador(
             Integer trabajadorId
     ) {
-
         return solicitudRepository
                 .findByTrabajadorId(
                         trabajadorId
@@ -140,11 +134,62 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<SolicitudServicioRespuesta> obtenerPorClientePaginadas(
+            Integer clienteId,
+            int pagina,
+            int tamanio
+    ) {
+        Pageable pageable =
+                crearPageable(
+                        pagina,
+                        tamanio
+                );
+
+        Page<SolicitudServicioRespuesta> resultado =
+                solicitudRepository
+                        .findByClienteId(
+                                clienteId,
+                                pageable
+                        )
+                        .map(this::convertirARespuesta);
+
+        return PaginaSalida.desde(
+                resultado
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaSalida<SolicitudServicioRespuesta> obtenerPorTrabajadorPaginadas(
+            Integer trabajadorId,
+            int pagina,
+            int tamanio
+    ) {
+        Pageable pageable =
+                crearPageable(
+                        pagina,
+                        tamanio
+                );
+
+        Page<SolicitudServicioRespuesta> resultado =
+                solicitudRepository
+                        .findByTrabajadorId(
+                                trabajadorId,
+                                pageable
+                        )
+                        .map(this::convertirARespuesta);
+
+        return PaginaSalida.desde(
+                resultado
+        );
+    }
+
+    @Override
     @Transactional
     public SolicitudServicioRespuesta guardar(
             SolicitudServicioGuardar dto
     ) {
-
         Servicio servicio =
                 servicioRepository
                         .findByIdAndEliminadoFalse(
@@ -207,7 +252,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public void eliminar(
             Long id
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -221,7 +265,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public SolicitudServicioRespuesta aceptar(
             Long id
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -246,7 +289,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public SolicitudServicioRespuesta rechazar(
             Long id
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -271,7 +313,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public SolicitudServicioRespuesta iniciar(
             Long id
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -296,7 +337,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     public SolicitudServicioRespuesta completar(
             Long id
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -322,7 +362,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             Long id,
             SolicitudServicioCancelar dto
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -352,7 +391,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             Long id,
             Integer usuarioId
     ) {
-
         SolicitudServicio solicitud =
                 buscarPorId(id);
 
@@ -367,7 +405,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             int pagina,
             int tamanio
     ) {
-
         int paginaSegura =
                 Math.max(
                         pagina,
@@ -397,7 +434,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             LocalDate fechaDesde,
             LocalDate fechaHasta
     ) {
-
         if (fechaDesde != null
                 && fechaHasta != null
                 && fechaDesde.isAfter(fechaHasta)) {
@@ -411,7 +447,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     private String normalizarTexto(
             String texto
     ) {
-
         if (texto == null) {
             return null;
         }
@@ -427,7 +462,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     private SolicitudServicio buscarPorId(
             Long id
     ) {
-
         return solicitudRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -442,7 +476,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             SolicitudServicio solicitud,
             EstadoSolicitud nuevoEstado
     ) {
-
         EstadoSolicitud estadoActual =
                 solicitud.getEstado();
 
@@ -467,7 +500,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 };
 
         if (!transicionValida) {
-
             throw new ReglaNegocioException(
                     String.format(
                             "No se puede cambiar el estado de la solicitud de %s a %s",
@@ -481,7 +513,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     private SolicitudServicioRespuesta convertirARespuesta(
             SolicitudServicio entidad
     ) {
-
         SolicitudServicioRespuesta respuesta =
                 new SolicitudServicioRespuesta();
 
@@ -490,9 +521,12 @@ public class SolicitudServicioService implements ISolicitudServicioService {
         );
 
         if (entidad.getServicio() != null) {
-
             respuesta.setServicioId(
                     entidad.getServicio().getId()
+            );
+
+            respuesta.setServicioTitulo(
+                    entidad.getServicio().getTitulo()
             );
         }
 
