@@ -22,8 +22,7 @@ public class ImagenController {
     public ImagenController(
             IImagenService imagenService
     ) {
-        this.imagenService =
-                imagenService;
+        this.imagenService = imagenService;
     }
 
     @PostMapping(
@@ -39,9 +38,7 @@ public class ImagenController {
     ) {
 
         Integer trabajadorId =
-                obtenerUsuarioId(
-                        jwt
-                );
+                obtenerUsuarioId(jwt);
 
         String fotoUrl =
                 imagenService.subirFotoPerfil(
@@ -71,9 +68,18 @@ public class ImagenController {
 
         try {
 
-            return Integer.valueOf(
-                    jwt.getSubject()
-            );
+            Integer usuarioId =
+                    Integer.valueOf(
+                            jwt.getSubject()
+                    );
+
+            if (usuarioId <= 0) {
+                throw new ReglaNegocioException(
+                        "El identificador del usuario autenticado no es válido"
+                );
+            }
+
+            return usuarioId;
 
         } catch (NumberFormatException exception) {
 

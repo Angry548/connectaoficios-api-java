@@ -1,12 +1,10 @@
 package com.connectaoficios.api.config;
 
 import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Configuration
 public class CloudinaryConfig {
@@ -23,31 +21,36 @@ public class CloudinaryConfig {
     @Bean
     public Cloudinary cloudinary() {
 
-        Map<String, String> configuracion =
-                new HashMap<>();
-
-        configuracion.put(
-                "cloud_name",
-                cloudName
-        );
-
-        configuracion.put(
-                "api_key",
-                apiKey
-        );
-
-        configuracion.put(
-                "api_secret",
-                apiSecret
-        );
-
-        configuracion.put(
-                "secure",
-                "true"
-        );
+        validarConfiguracion();
 
         return new Cloudinary(
-                configuracion
+                ObjectUtils.asMap(
+                        "cloud_name", cloudName.trim(),
+                        "api_key", apiKey.trim(),
+                        "api_secret", apiSecret.trim(),
+                        "secure", true
+                )
         );
+    }
+
+    private void validarConfiguracion() {
+
+        if (cloudName == null || cloudName.isBlank()) {
+            throw new IllegalStateException(
+                    "CLOUDINARY_CLOUD_NAME no está configurado"
+            );
+        }
+
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException(
+                    "CLOUDINARY_API_KEY no está configurado"
+            );
+        }
+
+        if (apiSecret == null || apiSecret.isBlank()) {
+            throw new IllegalStateException(
+                    "CLOUDINARY_API_SECRET no está configurado"
+            );
+        }
     }
 }

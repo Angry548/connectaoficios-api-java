@@ -30,9 +30,8 @@ public class ImagenService implements IImagenService {
             Integer trabajadorId
     ) {
 
-        validarArchivo(
-                archivo
-        );
+        validarArchivo(archivo);
+        validarTrabajador(trabajadorId);
 
         try {
 
@@ -46,28 +45,65 @@ public class ImagenService implements IImagenService {
                                     "trabajador_" + trabajadorId,
                                     "overwrite",
                                     true,
+                                    "invalidate",
+                                    true,
                                     "resource_type",
                                     "image"
                             )
                     );
 
-            Object url =
-                    resultado.get(
-                            "secure_url"
-                    );
+            Object secureUrl =
+                    resultado.get("secure_url");
 
-            if (url == null) {
+            if (secureUrl == null
+                    || secureUrl.toString().isBlank()) {
+
                 throw new ReglaNegocioException(
-                        "No se pudo obtener la URL de la fotografía"
+                        "Cloudinary no devolvió la URL de la fotografía"
                 );
             }
 
-            return url.toString();
+            return secureUrl.toString();
+
+        } catch (ReglaNegocioException exception) {
+
+            throw exception;
 
         } catch (IOException exception) {
 
+            String detalle =
+                    exception.getMessage() != null
+                            ? exception.getMessage()
+                            : "Error desconocido de Cloudinary";
+
             throw new ReglaNegocioException(
-                    "No se pudo subir la fotografía"
+                    "No se pudo subir la fotografía a Cloudinary: "
+                            + detalle
+            );
+
+        } catch (RuntimeException exception) {
+
+            String detalle =
+                    exception.getMessage() != null
+                            ? exception.getMessage()
+                            : exception.getClass().getSimpleName();
+
+            throw new ReglaNegocioException(
+                    "No se pudo procesar la fotografía: "
+                            + detalle
+            );
+        }
+    }
+
+    private void validarTrabajador(
+            Integer trabajadorId
+    ) {
+
+        if (trabajadorId == null
+                || trabajadorId <= 0) {
+
+            throw new ReglaNegocioException(
+                    "El identificador del trabajador no es válido"
             );
         }
     }
@@ -84,8 +120,7 @@ public class ImagenService implements IImagenService {
             );
         }
 
-        if (archivo.getSize()
-                > TAMANIO_MAXIMO) {
+        if (archivo.getSize() > TAMANIO_MAXIMO) {
 
             throw new ReglaNegocioException(
                     "La fotografía no puede superar los 5 MB"
@@ -96,18 +131,16 @@ public class ImagenService implements IImagenService {
                 archivo.getContentType();
 
         if (tipoContenido == null
-                || !tipoContenido.startsWith(
-                "image/"
-        )) {
+                || !tipoContenido.startsWith("image/")) {
 
             throw new ReglaNegocioException(
                     "El archivo seleccionado debe ser una imagen"
             );
         }
 
-        if (!tipoContenido.equals("image/jpeg")
-                && !tipoContenido.equals("image/png")
-                && !tipoContenido.equals("image/webp")) {
+        if (!tipoContenido.equalsIgnoreCase("image/jpeg")
+                && !tipoContenido.equalsIgnoreCase("image/png")
+                && !tipoContenido.equalsIgnoreCase("image/webp")) {
 
             throw new ReglaNegocioException(
                     "Solo se permiten imágenes JPG, PNG o WEBP"
