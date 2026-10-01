@@ -1,5 +1,6 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
+import com.connectaoficios.api.dtos.notificacion.NotificacionGuardar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioRechazar;
@@ -11,9 +12,11 @@ import com.connectaoficios.api.modelos.Servicio;
 import com.connectaoficios.api.modelos.SolicitudServicio;
 import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.repositorios.ISolicitudServicioRepository;
+import com.connectaoficios.api.servicios.interfaces.INotificacionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,6 +37,9 @@ class SolicitudServicioServiceTest {
     @Mock
     private IServicioRepository servicioRepository;
 
+    @Mock
+    private INotificacionService notificacionService;
+
     private SolicitudServicioService solicitudService;
 
     private SolicitudServicio solicitud;
@@ -44,23 +50,36 @@ class SolicitudServicioServiceTest {
 
         solicitudService = new SolicitudServicioService(
                 solicitudRepository,
-                servicioRepository
+                servicioRepository,
+                notificacionService
         );
 
         servicio = new Servicio();
         servicio.setId(1L);
-        servicio.setTitulo("Servicio de fontanería residencial");
+        servicio.setTitulo(
+                "Servicio de fontanería residencial"
+        );
 
         solicitud = new SolicitudServicio();
         solicitud.setId(1L);
         solicitud.setServicio(servicio);
         solicitud.setClienteId(100);
         solicitud.setTrabajadorId(200);
-        solicitud.setFechaPropuesta(LocalDate.now().plusDays(1));
-        solicitud.setHoraAproximada(LocalTime.of(10, 0));
-        solicitud.setDireccion("Calle Falsa 123");
-        solicitud.setDescripcionTrabajo("Reparación de tubería");
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        solicitud.setFechaPropuesta(
+                LocalDate.now().plusDays(1)
+        );
+        solicitud.setHoraAproximada(
+                LocalTime.of(10, 0)
+        );
+        solicitud.setDireccion(
+                "Calle Falsa 123"
+        );
+        solicitud.setDescripcionTrabajo(
+                "Reparación de tubería"
+        );
+        solicitud.setEstado(
+                EstadoSolicitud.PENDIENTE
+        );
     }
 
     @Test
@@ -72,23 +91,38 @@ class SolicitudServicioServiceTest {
         dto.setServicioId(1L);
         dto.setClienteId(100);
         dto.setTrabajadorId(200);
-        dto.setFechaPropuesta(LocalDate.now().plusDays(1));
-        dto.setHoraAproximada(LocalTime.of(10, 0));
-        dto.setDireccionServicio("Calle Falsa 123");
-        dto.setDescripcionTrabajo("Reparación de tubería");
+        dto.setFechaPropuesta(
+                LocalDate.now().plusDays(1)
+        );
+        dto.setHoraAproximada(
+                LocalTime.of(10, 0)
+        );
+        dto.setDireccionServicio(
+                "Calle Falsa 123"
+        );
+        dto.setDescripcionTrabajo(
+                "Reparación de tubería"
+        );
 
-        when(servicioRepository.findByIdAndEliminadoFalse(1L))
-                .thenReturn(Optional.of(servicio));
+        when(
+                servicioRepository
+                        .findByIdAndEliminadoFalse(1L)
+        ).thenReturn(
+                Optional.of(servicio)
+        );
 
-        when(solicitudRepository.save(any(SolicitudServicio.class)))
-                .thenAnswer(invocation -> {
-                    SolicitudServicio guardada =
-                            invocation.getArgument(0);
+        when(
+                solicitudRepository
+                        .save(any(SolicitudServicio.class))
+        ).thenAnswer(invocation -> {
 
-                    guardada.setId(1L);
+            SolicitudServicio guardada =
+                    invocation.getArgument(0);
 
-                    return guardada;
-                });
+            guardada.setId(1L);
+
+            return guardada;
+        });
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.guardar(dto);
@@ -134,13 +168,56 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 times(1)
         ).save(any(SolicitudServicio.class));
+
+        ArgumentCaptor<NotificacionGuardar> captor =
+                ArgumentCaptor.forClass(
+                        NotificacionGuardar.class
+                );
+
+        verify(
+                notificacionService,
+                times(1)
+        ).guardar(
+                captor.capture()
+        );
+
+        NotificacionGuardar notificacion =
+                captor.getValue();
+
+        assertEquals(
+                200,
+                notificacion.getUsuarioDestinoId()
+        );
+
+        assertEquals(
+                "NUEVA_SOLICITUD",
+                notificacion.getTipo()
+        );
+
+        assertEquals(
+                "Nueva solicitud de servicio",
+                notificacion.getTitulo()
+        );
+
+        assertEquals(
+                "Has recibido una nueva solicitud para el servicio \"Servicio de fontanería residencial\".",
+                notificacion.getMensaje()
+        );
+
+        assertEquals(
+                1L,
+                notificacion.getReferenciaId()
+        );
     }
 
     @Test
     void obtenerPorId_debeRetornarSolicitud() {
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.obtenerPorId(1L);
@@ -171,12 +248,17 @@ class SolicitudServicioServiceTest {
     @Test
     void obtenerPorId_debeLanzarExcepcionCuandoNoExiste() {
 
-        when(solicitudRepository.findById(99L))
-                .thenReturn(Optional.empty());
+        when(
+                solicitudRepository.findById(99L)
+        ).thenReturn(
+                Optional.empty()
+        );
 
         assertThrows(
                 RecursoNoEncontradoException.class,
-                () -> solicitudService.obtenerPorId(99L)
+                () ->
+                        solicitudService
+                                .obtenerPorId(99L)
         );
 
         verify(
@@ -192,11 +274,18 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.PENDIENTE
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
-        when(solicitudRepository.save(any(SolicitudServicio.class)))
-                .thenReturn(solicitud);
+        when(
+                solicitudRepository
+                        .save(any(SolicitudServicio.class))
+        ).thenReturn(
+                solicitud
+        );
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.aceptar(1L);
@@ -212,6 +301,46 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 times(1)
         ).save(solicitud);
+
+        ArgumentCaptor<NotificacionGuardar> captor =
+                ArgumentCaptor.forClass(
+                        NotificacionGuardar.class
+                );
+
+        verify(
+                notificacionService,
+                times(1)
+        ).guardar(
+                captor.capture()
+        );
+
+        NotificacionGuardar notificacion =
+                captor.getValue();
+
+        assertEquals(
+                100,
+                notificacion.getUsuarioDestinoId()
+        );
+
+        assertEquals(
+                "CAMBIO_ESTADO_SOLICITUD",
+                notificacion.getTipo()
+        );
+
+        assertEquals(
+                "Solicitud aceptada",
+                notificacion.getTitulo()
+        );
+
+        assertEquals(
+                "El trabajador aceptó tu solicitud de servicio.",
+                notificacion.getMensaje()
+        );
+
+        assertEquals(
+                1L,
+                notificacion.getReferenciaId()
+        );
     }
 
     @Test
@@ -228,11 +357,18 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.PENDIENTE
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
-        when(solicitudRepository.save(any(SolicitudServicio.class)))
-                .thenReturn(solicitud);
+        when(
+                solicitudRepository
+                        .save(any(SolicitudServicio.class))
+        ).thenReturn(
+                solicitud
+        );
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.rechazar(
@@ -261,6 +397,46 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 times(1)
         ).save(solicitud);
+
+        ArgumentCaptor<NotificacionGuardar> captor =
+                ArgumentCaptor.forClass(
+                        NotificacionGuardar.class
+                );
+
+        verify(
+                notificacionService,
+                times(1)
+        ).guardar(
+                captor.capture()
+        );
+
+        NotificacionGuardar notificacion =
+                captor.getValue();
+
+        assertEquals(
+                100,
+                notificacion.getUsuarioDestinoId()
+        );
+
+        assertEquals(
+                "CAMBIO_ESTADO_SOLICITUD",
+                notificacion.getTipo()
+        );
+
+        assertEquals(
+                "Solicitud rechazada",
+                notificacion.getTitulo()
+        );
+
+        assertEquals(
+                "El trabajador rechazó tu solicitud de servicio.",
+                notificacion.getMensaje()
+        );
+
+        assertEquals(
+                1L,
+                notificacion.getReferenciaId()
+        );
     }
 
     @Test
@@ -270,11 +446,18 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.ACEPTADA
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
-        when(solicitudRepository.save(any(SolicitudServicio.class)))
-                .thenReturn(solicitud);
+        when(
+                solicitudRepository
+                        .save(any(SolicitudServicio.class))
+        ).thenReturn(
+                solicitud
+        );
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.iniciar(1L);
@@ -290,6 +473,46 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 times(1)
         ).save(solicitud);
+
+        ArgumentCaptor<NotificacionGuardar> captor =
+                ArgumentCaptor.forClass(
+                        NotificacionGuardar.class
+                );
+
+        verify(
+                notificacionService,
+                times(1)
+        ).guardar(
+                captor.capture()
+        );
+
+        NotificacionGuardar notificacion =
+                captor.getValue();
+
+        assertEquals(
+                100,
+                notificacion.getUsuarioDestinoId()
+        );
+
+        assertEquals(
+                "CAMBIO_ESTADO_SOLICITUD",
+                notificacion.getTipo()
+        );
+
+        assertEquals(
+                "Servicio iniciado",
+                notificacion.getTitulo()
+        );
+
+        assertEquals(
+                "El trabajador inició el servicio solicitado.",
+                notificacion.getMensaje()
+        );
+
+        assertEquals(
+                1L,
+                notificacion.getReferenciaId()
+        );
     }
 
     @Test
@@ -299,11 +522,18 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.EN_PROCESO
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
-        when(solicitudRepository.save(any(SolicitudServicio.class)))
-                .thenReturn(solicitud);
+        when(
+                solicitudRepository
+                        .save(any(SolicitudServicio.class))
+        ).thenReturn(
+                solicitud
+        );
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.completar(1L);
@@ -319,6 +549,46 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 times(1)
         ).save(solicitud);
+
+        ArgumentCaptor<NotificacionGuardar> captor =
+                ArgumentCaptor.forClass(
+                        NotificacionGuardar.class
+                );
+
+        verify(
+                notificacionService,
+                times(1)
+        ).guardar(
+                captor.capture()
+        );
+
+        NotificacionGuardar notificacion =
+                captor.getValue();
+
+        assertEquals(
+                100,
+                notificacion.getUsuarioDestinoId()
+        );
+
+        assertEquals(
+                "CAMBIO_ESTADO_SOLICITUD",
+                notificacion.getTipo()
+        );
+
+        assertEquals(
+                "Servicio completado",
+                notificacion.getTitulo()
+        );
+
+        assertEquals(
+                "El trabajador marcó tu servicio como completado.",
+                notificacion.getMensaje()
+        );
+
+        assertEquals(
+                1L,
+                notificacion.getReferenciaId()
+        );
     }
 
     @Test
@@ -335,11 +605,18 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.PENDIENTE
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
-        when(solicitudRepository.save(any(SolicitudServicio.class)))
-                .thenReturn(solicitud);
+        when(
+                solicitudRepository
+                        .save(any(SolicitudServicio.class))
+        ).thenReturn(
+                solicitud
+        );
 
         SolicitudServicioRespuesta resultado =
                 solicitudService.cancelar(
@@ -363,6 +640,46 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 times(1)
         ).save(solicitud);
+
+        ArgumentCaptor<NotificacionGuardar> captor =
+                ArgumentCaptor.forClass(
+                        NotificacionGuardar.class
+                );
+
+        verify(
+                notificacionService,
+                times(1)
+        ).guardar(
+                captor.capture()
+        );
+
+        NotificacionGuardar notificacion =
+                captor.getValue();
+
+        assertEquals(
+                200,
+                notificacion.getUsuarioDestinoId()
+        );
+
+        assertEquals(
+                "CAMBIO_ESTADO_SOLICITUD",
+                notificacion.getTipo()
+        );
+
+        assertEquals(
+                "Solicitud cancelada",
+                notificacion.getTitulo()
+        );
+
+        assertEquals(
+                "La solicitud del servicio \"Servicio de fontanería residencial\" fue cancelada.",
+                notificacion.getMensaje()
+        );
+
+        assertEquals(
+                1L,
+                notificacion.getReferenciaId()
+        );
     }
 
     @Test
@@ -379,21 +696,34 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.ACEPTADA
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> solicitudService.rechazar(
-                        1L,
-                        dto
-                )
+                () ->
+                        solicitudService.rechazar(
+                                1L,
+                                dto
+                        )
         );
 
         verify(
                 solicitudRepository,
                 never()
-        ).save(any(SolicitudServicio.class));
+        ).save(
+                any(SolicitudServicio.class)
+        );
+
+        verify(
+                notificacionService,
+                never()
+        ).guardar(
+                any(NotificacionGuardar.class)
+        );
     }
 
     @Test
@@ -403,18 +733,31 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.PENDIENTE
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> solicitudService.iniciar(1L)
+                () ->
+                        solicitudService.iniciar(1L)
         );
 
         verify(
                 solicitudRepository,
                 never()
-        ).save(any(SolicitudServicio.class));
+        ).save(
+                any(SolicitudServicio.class)
+        );
+
+        verify(
+                notificacionService,
+                never()
+        ).guardar(
+                any(NotificacionGuardar.class)
+        );
     }
 
     @Test
@@ -424,18 +767,31 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.PENDIENTE
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> solicitudService.completar(1L)
+                () ->
+                        solicitudService.completar(1L)
         );
 
         verify(
                 solicitudRepository,
                 never()
-        ).save(any(SolicitudServicio.class));
+        ).save(
+                any(SolicitudServicio.class)
+        );
+
+        verify(
+                notificacionService,
+                never()
+        ).guardar(
+                any(NotificacionGuardar.class)
+        );
     }
 
     @Test
@@ -445,18 +801,31 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.COMPLETADA
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> solicitudService.aceptar(1L)
+                () ->
+                        solicitudService.aceptar(1L)
         );
 
         verify(
                 solicitudRepository,
                 never()
-        ).save(any(SolicitudServicio.class));
+        ).save(
+                any(SolicitudServicio.class)
+        );
+
+        verify(
+                notificacionService,
+                never()
+        ).guardar(
+                any(NotificacionGuardar.class)
+        );
     }
 
     @Test
@@ -473,28 +842,44 @@ class SolicitudServicioServiceTest {
                 EstadoSolicitud.RECHAZADA
         );
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         assertThrows(
                 ReglaNegocioException.class,
-                () -> solicitudService.cancelar(
-                        1L,
-                        dto
-                )
+                () ->
+                        solicitudService.cancelar(
+                                1L,
+                                dto
+                        )
         );
 
         verify(
                 solicitudRepository,
                 never()
-        ).save(any(SolicitudServicio.class));
+        ).save(
+                any(SolicitudServicio.class)
+        );
+
+        verify(
+                notificacionService,
+                never()
+        ).guardar(
+                any(NotificacionGuardar.class)
+        );
     }
 
     @Test
     void eliminar_debeBorrarSolicitudSiExiste() {
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         solicitudService.eliminar(1L);
 
@@ -507,8 +892,11 @@ class SolicitudServicioServiceTest {
     @Test
     void esParticipante_debeRetornarTrueSiEsClienteOTrabajador() {
 
-        when(solicitudRepository.findById(1L))
-                .thenReturn(Optional.of(solicitud));
+        when(
+                solicitudRepository.findById(1L)
+        ).thenReturn(
+                Optional.of(solicitud)
+        );
 
         assertTrue(
                 solicitudService.esParticipante(
