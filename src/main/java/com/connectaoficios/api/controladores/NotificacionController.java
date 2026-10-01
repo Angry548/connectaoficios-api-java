@@ -5,7 +5,8 @@ import com.connectaoficios.api.servicios.interfaces.INotificacionService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -26,21 +27,13 @@ public class NotificacionController {
     @PreAuthorize(
             "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
     )
-    public ResponseEntity<Page<NotificacionRespuesta>>
-    listarMisNotificaciones(
-            @RequestParam(required = false)
-            Boolean leida,
-
-            @RequestParam(defaultValue = "0")
-            int page,
-
-            @RequestParam(defaultValue = "10")
-            int size,
-
-            Authentication authentication
+    public ResponseEntity<Page<NotificacionRespuesta>> listarMisNotificaciones(
+            @RequestParam(required = false) Boolean leida,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Integer usuarioId =
-                obtenerUsuarioId(authentication);
+        Integer usuarioId = obtenerUsuarioId(jwt);
 
         return ResponseEntity.ok(
                 notificacionService.listarPorUsuario(
@@ -56,12 +49,10 @@ public class NotificacionController {
     @PreAuthorize(
             "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
     )
-    public ResponseEntity<Map<String, Long>>
-    contarNoLeidas(
-            Authentication authentication
+    public ResponseEntity<Map<String, Long>> contarNoLeidas(
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Integer usuarioId =
-                obtenerUsuarioId(authentication);
+        Integer usuarioId = obtenerUsuarioId(jwt);
 
         long cantidad =
                 notificacionService.contarNoLeidas(
@@ -69,7 +60,10 @@ public class NotificacionController {
                 );
 
         return ResponseEntity.ok(
-                Map.of("cantidad", cantidad)
+                Map.of(
+                        "cantidad",
+                        cantidad
+                )
         );
     }
 
@@ -77,13 +71,11 @@ public class NotificacionController {
     @PreAuthorize(
             "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
     )
-    public ResponseEntity<NotificacionRespuesta>
-    obtenerPorId(
+    public ResponseEntity<NotificacionRespuesta> obtenerPorId(
             @PathVariable Long id,
-            Authentication authentication
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Integer usuarioId =
-                obtenerUsuarioId(authentication);
+        Integer usuarioId = obtenerUsuarioId(jwt);
 
         return ResponseEntity.ok(
                 notificacionService.obtenerPorId(
@@ -97,13 +89,11 @@ public class NotificacionController {
     @PreAuthorize(
             "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
     )
-    public ResponseEntity<NotificacionRespuesta>
-    marcarComoLeida(
+    public ResponseEntity<NotificacionRespuesta> marcarComoLeida(
             @PathVariable Long id,
-            Authentication authentication
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Integer usuarioId =
-                obtenerUsuarioId(authentication);
+        Integer usuarioId = obtenerUsuarioId(jwt);
 
         return ResponseEntity.ok(
                 notificacionService.marcarComoLeida(
@@ -117,13 +107,11 @@ public class NotificacionController {
     @PreAuthorize(
             "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
     )
-    public ResponseEntity<NotificacionRespuesta>
-    marcarComoNoLeida(
+    public ResponseEntity<NotificacionRespuesta> marcarComoNoLeida(
             @PathVariable Long id,
-            Authentication authentication
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Integer usuarioId =
-                obtenerUsuarioId(authentication);
+        Integer usuarioId = obtenerUsuarioId(jwt);
 
         return ResponseEntity.ok(
                 notificacionService.marcarComoNoLeida(
@@ -137,12 +125,10 @@ public class NotificacionController {
     @PreAuthorize(
             "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
     )
-    public ResponseEntity<Map<String, Object>>
-    marcarTodasComoLeidas(
-            Authentication authentication
+    public ResponseEntity<Map<String, Object>> marcarTodasComoLeidas(
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Integer usuarioId =
-                obtenerUsuarioId(authentication);
+        Integer usuarioId = obtenerUsuarioId(jwt);
 
         int cantidad =
                 notificacionService.marcarTodasComoLeidas(
@@ -160,11 +146,12 @@ public class NotificacionController {
     }
 
     private Integer obtenerUsuarioId(
-            Authentication authentication
+            Jwt jwt
     ) {
         if (
-                authentication == null ||
-                        authentication.getName() == null
+                jwt == null ||
+                        jwt.getSubject() == null ||
+                        jwt.getSubject().isBlank()
         ) {
             throw new RuntimeException(
                     "No se pudo identificar al usuario autenticado."
@@ -173,7 +160,7 @@ public class NotificacionController {
 
         try {
             return Integer.valueOf(
-                    authentication.getName()
+                    jwt.getSubject()
             );
         } catch (NumberFormatException ex) {
             throw new RuntimeException(
