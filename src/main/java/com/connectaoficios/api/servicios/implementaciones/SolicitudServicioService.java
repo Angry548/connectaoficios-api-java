@@ -1,6 +1,7 @@
 package com.connectaoficios.api.servicios.implementaciones;
 
 import com.connectaoficios.api.dtos.comun.PaginaSalida;
+import com.connectaoficios.api.dtos.notificacion.NotificacionGuardar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioCancelar;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioFiltroDTO;
 import com.connectaoficios.api.dtos.solicitud.SolicitudServicioGuardar;
@@ -13,6 +14,7 @@ import com.connectaoficios.api.modelos.Servicio;
 import com.connectaoficios.api.modelos.SolicitudServicio;
 import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.repositorios.ISolicitudServicioRepository;
+import com.connectaoficios.api.servicios.interfaces.INotificacionService;
 import com.connectaoficios.api.servicios.interfaces.ISolicitudServicioService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,13 +34,16 @@ public class SolicitudServicioService implements ISolicitudServicioService {
 
     private final ISolicitudServicioRepository solicitudRepository;
     private final IServicioRepository servicioRepository;
+    private final INotificacionService notificacionService;
 
     public SolicitudServicioService(
             ISolicitudServicioRepository solicitudRepository,
-            IServicioRepository servicioRepository
+            IServicioRepository servicioRepository,
+            INotificacionService notificacionService
     ) {
         this.solicitudRepository = solicitudRepository;
         this.servicioRepository = servicioRepository;
+        this.notificacionService = notificacionService;
     }
 
     @Override
@@ -243,6 +248,10 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                         solicitud
                 );
 
+        crearNotificacionNuevaSolicitud(
+                guardada
+        );
+
         return convertirARespuesta(
                 guardada
         );
@@ -278,10 +287,19 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 EstadoSolicitud.ACEPTADA
         );
 
-        return convertirARespuesta(
+        SolicitudServicio guardada =
                 solicitudRepository.save(
                         solicitud
-                )
+                );
+
+        crearNotificacionCambioEstado(
+                guardada,
+                "Solicitud aceptada",
+                "El trabajador aceptó tu solicitud de servicio."
+        );
+
+        return convertirARespuesta(
+                guardada
         );
     }
 
@@ -307,10 +325,19 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 dto.getMotivoRechazo().trim()
         );
 
-        return convertirARespuesta(
+        SolicitudServicio guardada =
                 solicitudRepository.save(
                         solicitud
-                )
+                );
+
+        crearNotificacionCambioEstado(
+                guardada,
+                "Solicitud rechazada",
+                "El trabajador rechazó tu solicitud de servicio."
+        );
+
+        return convertirARespuesta(
+                guardada
         );
     }
 
@@ -331,10 +358,19 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 EstadoSolicitud.EN_PROCESO
         );
 
-        return convertirARespuesta(
+        SolicitudServicio guardada =
                 solicitudRepository.save(
                         solicitud
-                )
+                );
+
+        crearNotificacionCambioEstado(
+                guardada,
+                "Servicio iniciado",
+                "El trabajador inició el servicio solicitado."
+        );
+
+        return convertirARespuesta(
+                guardada
         );
     }
 
@@ -355,10 +391,19 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 EstadoSolicitud.COMPLETADA
         );
 
-        return convertirARespuesta(
+        SolicitudServicio guardada =
                 solicitudRepository.save(
                         solicitud
-                )
+                );
+
+        crearNotificacionCambioEstado(
+                guardada,
+                "Servicio completado",
+                "El trabajador marcó tu servicio como completado."
+        );
+
+        return convertirARespuesta(
+                guardada
         );
     }
 
@@ -384,10 +429,17 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 dto.getMotivoCancelacion().trim()
         );
 
-        return convertirARespuesta(
+        SolicitudServicio guardada =
                 solicitudRepository.save(
                         solicitud
-                )
+                );
+
+        crearNotificacionCancelacion(
+                guardada
+        );
+
+        return convertirARespuesta(
+                guardada
         );
     }
 
@@ -405,6 +457,129 @@ public class SolicitudServicioService implements ISolicitudServicioService {
         ) || usuarioId.equals(
                 solicitud.getTrabajadorId()
         );
+    }
+
+    private void crearNotificacionNuevaSolicitud(
+            SolicitudServicio solicitud
+    ) {
+        NotificacionGuardar notificacion =
+                new NotificacionGuardar();
+
+        notificacion.setUsuarioDestinoId(
+                solicitud.getTrabajadorId()
+        );
+
+        notificacion.setTipo(
+                "NUEVA_SOLICITUD"
+        );
+
+        notificacion.setTitulo(
+                "Nueva solicitud de servicio"
+        );
+
+        String tituloServicio =
+                obtenerTituloServicio(
+                        solicitud
+                );
+
+        notificacion.setMensaje(
+                "Has recibido una nueva solicitud para el servicio \""
+                        + tituloServicio
+                        + "\"."
+        );
+
+        notificacion.setReferenciaId(
+                solicitud.getId()
+        );
+
+        notificacionService.guardar(
+                notificacion
+        );
+    }
+
+    private void crearNotificacionCambioEstado(
+            SolicitudServicio solicitud,
+            String titulo,
+            String mensaje
+    ) {
+        NotificacionGuardar notificacion =
+                new NotificacionGuardar();
+
+        notificacion.setUsuarioDestinoId(
+                solicitud.getClienteId()
+        );
+
+        notificacion.setTipo(
+                "CAMBIO_ESTADO_SOLICITUD"
+        );
+
+        notificacion.setTitulo(
+                titulo
+        );
+
+        notificacion.setMensaje(
+                mensaje
+        );
+
+        notificacion.setReferenciaId(
+                solicitud.getId()
+        );
+
+        notificacionService.guardar(
+                notificacion
+        );
+    }
+
+    private void crearNotificacionCancelacion(
+            SolicitudServicio solicitud
+    ) {
+        NotificacionGuardar notificacion =
+                new NotificacionGuardar();
+
+        notificacion.setUsuarioDestinoId(
+                solicitud.getTrabajadorId()
+        );
+
+        notificacion.setTipo(
+                "CAMBIO_ESTADO_SOLICITUD"
+        );
+
+        notificacion.setTitulo(
+                "Solicitud cancelada"
+        );
+
+        notificacion.setMensaje(
+                "La solicitud del servicio \""
+                        + obtenerTituloServicio(solicitud)
+                        + "\" fue cancelada."
+        );
+
+        notificacion.setReferenciaId(
+                solicitud.getId()
+        );
+
+        notificacionService.guardar(
+                notificacion
+        );
+    }
+
+    private String obtenerTituloServicio(
+            SolicitudServicio solicitud
+    ) {
+        if (
+                solicitud.getServicio() != null
+                        && solicitud.getServicio().getTitulo() != null
+                        && !solicitud.getServicio()
+                        .getTitulo()
+                        .isBlank()
+        ) {
+            return solicitud
+                    .getServicio()
+                    .getTitulo()
+                    .trim();
+        }
+
+        return "Servicio";
     }
 
     private Pageable crearPageable(
@@ -440,10 +615,11 @@ public class SolicitudServicioService implements ISolicitudServicioService {
             LocalDate fechaDesde,
             LocalDate fechaHasta
     ) {
-        if (fechaDesde != null
-                && fechaHasta != null
-                && fechaDesde.isAfter(fechaHasta)) {
-
+        if (
+                fechaDesde != null
+                        && fechaHasta != null
+                        && fechaDesde.isAfter(fechaHasta)
+        ) {
             throw new ReglaNegocioException(
                     "La fecha inicial no puede ser posterior a la fecha final"
             );
@@ -487,7 +663,6 @@ public class SolicitudServicioService implements ISolicitudServicioService {
 
         boolean transicionValida =
                 switch (estadoActual) {
-
                     case PENDIENTE ->
                             nuevoEstado == EstadoSolicitud.ACEPTADA
                                     || nuevoEstado == EstadoSolicitud.RECHAZADA
