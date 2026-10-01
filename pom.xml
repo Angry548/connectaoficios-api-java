@@ -28,6 +28,7 @@
 		<lombok.version>1.18.48</lombok.version>
 		<springdoc.version>3.1.1</springdoc.version>
 		<modelmapper.version>3.2.4</modelmapper.version>
+		<cloudinary.version>2.3.0</cloudinary.version>
 	</properties>
 
 	<dependencies>
@@ -84,6 +85,12 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>${cloudinary.version}</version>
 		</dependency>
 
 		<dependency>
