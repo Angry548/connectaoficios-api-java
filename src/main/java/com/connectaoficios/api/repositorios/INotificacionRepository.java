@@ -1,7 +1,7 @@
 package com.connectaoficios.api.repositorios;
 
-import com.connectaoficios.api.modelos.Notificacion;
 import com.connectaoficios.api.enums.TipoNotificacion;
+import com.connectaoficios.api.modelos.Notificacion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,11 +14,25 @@ public interface INotificacionRepository extends JpaRepository<Notificacion, Lon
 
     List<Notificacion> findByUsuarioDestinoId(Integer usuarioDestinoId);
 
-    Page<Notificacion> findByUsuarioDestinoId(Integer usuarioDestinoId, Pageable pageable);
+    Page<Notificacion> findByUsuarioDestinoId(
+            Integer usuarioDestinoId,
+            Pageable pageable
+    );
 
-    List<Notificacion> findByUsuarioDestinoIdAndLeida(Integer usuarioDestinoId, Boolean leida);
+    Page<Notificacion> findByUsuarioDestinoIdAndLeida(
+            Integer usuarioDestinoId,
+            Boolean leida,
+            Pageable pageable
+    );
+
+    List<Notificacion> findByUsuarioDestinoIdAndLeida(
+            Integer usuarioDestinoId,
+            Boolean leida
+    );
 
     List<Notificacion> findByTipo(TipoNotificacion tipo);
 
-    long countByUsuarioDestinoIdAndLeidaFalse(Integer usuarioDestinoId);
+    long countByUsuarioDestinoIdAndLeidaFalse(
+            Integer usuarioDestinoId
+    );
 }
