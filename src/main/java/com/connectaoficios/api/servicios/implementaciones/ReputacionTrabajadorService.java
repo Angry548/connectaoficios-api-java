@@ -410,6 +410,17 @@ public class ReputacionTrabajadorService
         );
     }
 
+    @Override
+    @Transactional
+    public ReputacionTrabajadorSalida registrarServicioCompletado(
+            Long perfilTrabajadorId
+    ) {
+
+        return recalcular(
+                perfilTrabajadorId
+        );
+    }
+
     private Pageable crearPageable(
             int pagina,
             int tamanio

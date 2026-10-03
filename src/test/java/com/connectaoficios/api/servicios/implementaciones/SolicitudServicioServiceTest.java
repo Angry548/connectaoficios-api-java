@@ -13,6 +13,7 @@ import com.connectaoficios.api.modelos.SolicitudServicio;
 import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.repositorios.ISolicitudServicioRepository;
 import com.connectaoficios.api.servicios.interfaces.INotificacionService;
+import com.connectaoficios.api.servicios.interfaces.IReputacionTrabajadorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +42,9 @@ class SolicitudServicioServiceTest {
     @Mock
     private INotificacionService notificacionService;
 
+    @Mock
+    private IReputacionTrabajadorService reputacionTrabajadorService;
+
     private SolicitudServicioService solicitudService;
 
     private SolicitudServicio solicitud;
@@ -51,7 +56,8 @@ class SolicitudServicioServiceTest {
         solicitudService = new SolicitudServicioService(
                 solicitudRepository,
                 servicioRepository,
-                notificacionService
+                notificacionService,
+                reputacionTrabajadorService
         );
 
         servicio = new Servicio();
@@ -550,6 +556,13 @@ class SolicitudServicioServiceTest {
                 times(1)
         ).save(solicitud);
 
+        verify(
+                reputacionTrabajadorService,
+                times(1)
+        ).registrarServicioCompletado(
+                200L
+        );
+
         ArgumentCaptor<NotificacionGuardar> captor =
                 ArgumentCaptor.forClass(
                         NotificacionGuardar.class
@@ -784,6 +797,13 @@ class SolicitudServicioServiceTest {
                 never()
         ).save(
                 any(SolicitudServicio.class)
+        );
+
+        verify(
+                reputacionTrabajadorService,
+                never()
+        ).registrarServicioCompletado(
+                anyLong()
         );
 
         verify(

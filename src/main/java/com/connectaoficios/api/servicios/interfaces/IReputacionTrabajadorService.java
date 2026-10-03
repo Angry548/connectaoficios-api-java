@@ -34,4 +34,8 @@ public interface IReputacionTrabajadorService {
     ReputacionTrabajadorSalida recalcular(
             Long perfilTrabajadorId
     );
+
+    ReputacionTrabajadorSalida registrarServicioCompletado(
+            Long perfilTrabajadorId
+    );
 }
