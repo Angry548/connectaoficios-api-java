@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class TransaccionPagoService implements ITransaccionPagoService {
@@ -55,7 +56,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     @Override
     @Transactional(readOnly = true)
     public List<TransaccionPagoSalida> obtenerTodos() {
-
         return transaccionPagoRepository
                 .findAll()
                 .stream()
@@ -68,7 +68,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     public Page<TransaccionPagoSalida> obtenerTodosPaginados(
             Pageable pageable
     ) {
-
         return transaccionPagoRepository
                 .findAll(pageable)
                 .map(this::convertirASalida);
@@ -79,7 +78,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     public TransaccionPagoSalida obtenerPorId(
             Long id
     ) {
-
         return convertirASalida(
                 buscarPorIdOLanzar(id)
         );
@@ -90,7 +88,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     public List<TransaccionPagoSalida> obtenerPorTrabajador(
             Integer trabajadorId
     ) {
-
         return transaccionPagoRepository
                 .findByTrabajadorId(trabajadorId)
                 .stream()
@@ -103,7 +100,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     public List<TransaccionPagoSalida> obtenerPorPromocion(
             Long promocionId
     ) {
-
         return transaccionPagoRepository
                 .findByPromocion_Id(promocionId)
                 .stream()
@@ -117,7 +113,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             EstadoTransaccion estado,
             Pageable pageable
     ) {
-
         return transaccionPagoRepository
                 .findByEstado(
                         estado,
@@ -133,7 +128,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             int pagina,
             int tamanio
     ) {
-
         validarRangoMontos(
                 filtro.getMontoMinimo(),
                 filtro.getMontoMaximo()
@@ -150,9 +144,10 @@ public class TransaccionPagoService implements ITransaccionPagoService {
                 );
 
         if (moneda != null) {
-            moneda = moneda.toUpperCase(
-                    Locale.ROOT
-            );
+            moneda =
+                    moneda.toUpperCase(
+                            Locale.ROOT
+                    );
         }
 
         String referenciaExterna =
@@ -194,7 +189,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             TransaccionPagoGuardar dto,
             Integer trabajadorId
     ) {
-
         Promocion promocion =
                 promocionRepository
                         .findById(dto.getPromocionId())
@@ -296,7 +290,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             Long id,
             TransaccionPagoAprobar dto
     ) {
-
         TransaccionPago transaccion =
                 buscarPorIdOLanzar(id);
 
@@ -334,10 +327,76 @@ public class TransaccionPagoService implements ITransaccionPagoService {
 
     @Override
     @Transactional
+    public TransaccionPagoSalida procesarPagoSimulado(
+            Long id,
+            Integer trabajadorId
+    ) {
+        TransaccionPago transaccion =
+                buscarPorIdOLanzar(id);
+
+        if (!transaccion
+                .getTrabajadorId()
+                .equals(trabajadorId)) {
+
+            throw new ReglaNegocioException(
+                    "La transacción no pertenece al trabajador autenticado"
+            );
+        }
+
+        if (transaccion.getEstado()
+                != EstadoTransaccion.PENDIENTE) {
+
+            throw new ReglaNegocioException(
+                    "Solo se puede procesar una transacción en estado PENDIENTE"
+            );
+        }
+
+        Promocion promocion =
+                transaccion.getPromocion();
+
+        if (promocion.getEstado()
+                != EstadoPromocion.PENDIENTE) {
+
+            throw new ReglaNegocioException(
+                    "La promoción ya no se encuentra pendiente de pago"
+            );
+        }
+
+        String referencia =
+                "SIM-"
+                        + UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 16)
+                        .toUpperCase(Locale.ROOT);
+
+        transaccion.setEstado(
+                EstadoTransaccion.APROBADA
+        );
+
+        transaccion.setReferenciaExterna(
+                referencia
+        );
+
+        TransaccionPago actualizada =
+                transaccionPagoRepository.save(
+                        transaccion
+                );
+
+        promocionService.activar(
+                promocion.getId()
+        );
+
+        return convertirASalida(
+                actualizada
+        );
+    }
+
+    @Override
+    @Transactional
     public TransaccionPagoSalida rechazar(
             Long id
     ) {
-
         TransaccionPago transaccion =
                 buscarPorIdOLanzar(id);
 
@@ -375,7 +434,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             Long id,
             Integer trabajadorId
     ) {
-
         TransaccionPago transaccion =
                 buscarPorIdOLanzar(id);
 
@@ -420,7 +478,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             int pagina,
             int tamanio
     ) {
-
         int paginaSegura =
                 Math.max(
                         pagina,
@@ -450,7 +507,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             BigDecimal montoMinimo,
             BigDecimal montoMaximo
     ) {
-
         if (montoMinimo != null
                 && montoMinimo.compareTo(
                 BigDecimal.ZERO
@@ -487,7 +543,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
-
         if (fechaDesde != null
                 && fechaHasta != null
                 && fechaDesde.isAfter(fechaHasta)) {
@@ -501,7 +556,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     private String normalizarTexto(
             String texto
     ) {
-
         if (texto == null) {
             return null;
         }
@@ -517,7 +571,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     private TransaccionPago buscarPorIdOLanzar(
             Long id
     ) {
-
         return transaccionPagoRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -531,7 +584,6 @@ public class TransaccionPagoService implements ITransaccionPagoService {
     private TransaccionPagoSalida convertirASalida(
             TransaccionPago transaccion
     ) {
-
         TransaccionPagoSalida salida =
                 new TransaccionPagoSalida();
 

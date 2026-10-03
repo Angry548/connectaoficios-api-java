@@ -52,8 +52,9 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PromocionSalida> obtenerTodos() {
+        sincronizarPromocionesVencidas();
 
         return promocionRepository
                 .findAll()
@@ -63,10 +64,11 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Page<PromocionSalida> obtenerTodosPaginados(
             Pageable pageable
     ) {
+        sincronizarPromocionesVencidas();
 
         return promocionRepository
                 .findAll(pageable)
@@ -74,10 +76,11 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PromocionSalida obtenerPorId(
             Long id
     ) {
+        sincronizarPromocionesVencidas();
 
         return convertirASalida(
                 buscarPorIdOLanzar(id)
@@ -85,10 +88,11 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PromocionSalida> obtenerPorTrabajador(
             Integer trabajadorId
     ) {
+        sincronizarPromocionesVencidas();
 
         return promocionRepository
                 .findByTrabajadorId(trabajadorId)
@@ -98,10 +102,11 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PromocionSalida> obtenerPorServicio(
             Long servicioId
     ) {
+        sincronizarPromocionesVencidas();
 
         return promocionRepository
                 .findByServicio_Id(servicioId)
@@ -111,11 +116,12 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Page<PromocionSalida> obtenerPorEstado(
             EstadoPromocion estado,
             Pageable pageable
     ) {
+        sincronizarPromocionesVencidas();
 
         return promocionRepository
                 .findByEstado(
@@ -126,12 +132,13 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PaginaSalida<PromocionSalida> buscarConFiltros(
             PromocionFiltroDTO filtro,
             int pagina,
             int tamanio
     ) {
+        sincronizarPromocionesVencidas();
 
         validarRangoFechas(
                 filtro.getFechaCreacionDesde(),
@@ -180,11 +187,12 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PromocionResumenSalida obtenerResumen(
             Long servicioId,
             Long planId
     ) {
+        sincronizarPromocionesVencidas();
 
         Servicio servicio =
                 servicioRepository
@@ -242,6 +250,7 @@ public class PromocionService implements IPromocionService {
             PromocionGuardar dto,
             Integer trabajadorId
     ) {
+        sincronizarPromocionesVencidas();
 
         Servicio servicio =
                 servicioRepository
@@ -284,7 +293,6 @@ public class PromocionService implements IPromocionService {
         if (!Boolean.TRUE.equals(
                 plan.getActivo()
         )) {
-
             throw new ReglaNegocioException(
                     "El plan de promoción seleccionado no está disponible"
             );
@@ -297,7 +305,7 @@ public class PromocionService implements IPromocionService {
                 )) {
 
             throw new ReglaNegocioException(
-                    "El servicio ya tiene una promoción pendiente o activa"
+                    "Este servicio ya tiene una promoción pendiente o vigente"
             );
         }
 
@@ -335,6 +343,7 @@ public class PromocionService implements IPromocionService {
     public PromocionSalida activar(
             Long id
     ) {
+        sincronizarPromocionesVencidas();
 
         Promocion promocion =
                 buscarPorIdOLanzar(id);
@@ -381,6 +390,7 @@ public class PromocionService implements IPromocionService {
     public PromocionSalida cancelar(
             Long id
     ) {
+        sincronizarPromocionesVencidas();
 
         Promocion promocion =
                 buscarPorIdOLanzar(id);
@@ -414,6 +424,7 @@ public class PromocionService implements IPromocionService {
     public PromocionSalida finalizar(
             Long id
     ) {
+        sincronizarPromocionesVencidas();
 
         Promocion promocion =
                 buscarPorIdOLanzar(id);
@@ -441,10 +452,11 @@ public class PromocionService implements IPromocionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean estaVigente(
             Long id
     ) {
+        sincronizarPromocionesVencidas();
 
         Promocion promocion =
                 buscarPorIdOLanzar(id);
@@ -459,11 +471,48 @@ public class PromocionService implements IPromocionService {
                 );
     }
 
+    private void sincronizarPromocionesVencidas() {
+        LocalDateTime ahora =
+                LocalDateTime.now();
+
+        List<Promocion> activas =
+                promocionRepository
+                        .findByEstado(
+                                EstadoPromocion.ACTIVA,
+                                Pageable.unpaged()
+                        )
+                        .getContent();
+
+        List<Promocion> vencidas =
+                activas
+                        .stream()
+                        .filter(promocion ->
+                                promocion.getFechaFin() != null
+                                        && !promocion
+                                        .getFechaFin()
+                                        .isAfter(ahora)
+                        )
+                        .toList();
+
+        if (vencidas.isEmpty()) {
+            return;
+        }
+
+        vencidas.forEach(promocion ->
+                promocion.setEstado(
+                        EstadoPromocion.FINALIZADA
+                )
+        );
+
+        promocionRepository.saveAll(
+                vencidas
+        );
+    }
+
     private Pageable crearPageable(
             int pagina,
             int tamanio
     ) {
-
         int paginaSegura =
                 Math.max(
                         pagina,
@@ -494,7 +543,6 @@ public class PromocionService implements IPromocionService {
             LocalDateTime fechaHasta,
             String nombreRango
     ) {
-
         if (fechaDesde != null
                 && fechaHasta != null
                 && fechaDesde.isAfter(fechaHasta)) {
@@ -510,7 +558,6 @@ public class PromocionService implements IPromocionService {
     private Promocion buscarPorIdOLanzar(
             Long id
     ) {
-
         return promocionRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -523,7 +570,6 @@ public class PromocionService implements IPromocionService {
     private PromocionSalida convertirASalida(
             Promocion promocion
     ) {
-
         PromocionSalida salida =
                 new PromocionSalida();
 

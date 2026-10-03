@@ -52,6 +52,11 @@ public interface ITransaccionPagoService {
             TransaccionPagoAprobar dto
     );
 
+    TransaccionPagoSalida procesarPagoSimulado(
+            Long id,
+            Integer trabajadorId
+    );
+
     TransaccionPagoSalida rechazar(
             Long id
     );
