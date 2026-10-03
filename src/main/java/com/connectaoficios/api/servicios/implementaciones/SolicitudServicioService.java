@@ -15,6 +15,7 @@ import com.connectaoficios.api.modelos.SolicitudServicio;
 import com.connectaoficios.api.repositorios.IServicioRepository;
 import com.connectaoficios.api.repositorios.ISolicitudServicioRepository;
 import com.connectaoficios.api.servicios.interfaces.INotificacionService;
+import com.connectaoficios.api.servicios.interfaces.IReputacionTrabajadorService;
 import com.connectaoficios.api.servicios.interfaces.ISolicitudServicioService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,15 +36,18 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     private final ISolicitudServicioRepository solicitudRepository;
     private final IServicioRepository servicioRepository;
     private final INotificacionService notificacionService;
+    private final IReputacionTrabajadorService reputacionTrabajadorService;
 
     public SolicitudServicioService(
             ISolicitudServicioRepository solicitudRepository,
             IServicioRepository servicioRepository,
-            INotificacionService notificacionService
+            INotificacionService notificacionService,
+            IReputacionTrabajadorService reputacionTrabajadorService
     ) {
         this.solicitudRepository = solicitudRepository;
         this.servicioRepository = servicioRepository;
         this.notificacionService = notificacionService;
+        this.reputacionTrabajadorService = reputacionTrabajadorService;
     }
 
     @Override
@@ -395,6 +399,16 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 solicitudRepository.save(
                         solicitud
                 );
+
+        Long perfilTrabajadorId =
+                guardada
+                        .getServicio()
+                        .getPerfilTrabajador()
+                        .getId();
+
+        reputacionTrabajadorService.recalcular(
+                perfilTrabajadorId
+        );
 
         crearNotificacionCambioEstado(
                 guardada,
