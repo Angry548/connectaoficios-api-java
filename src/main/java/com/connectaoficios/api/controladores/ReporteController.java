@@ -11,8 +11,6 @@ import com.connectaoficios.api.enums.TipoReporte;
 import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.servicios.interfaces.IReporteService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,7 +19,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/reportes")
@@ -35,29 +32,30 @@ public class ReporteController {
     public ReporteController(
             IReporteService reporteService
     ) {
-        this.reporteService =
-                reporteService;
+        this.reporteService = reporteService;
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(
+            "hasAnyRole('CLIENTE', 'TRABAJADOR')"
+    )
     public ResponseEntity<ReporteSalida> guardar(
-            @Valid @RequestBody ReporteGuardar reporteGuardar,
+            @Valid @RequestBody ReporteGuardar dto,
             JwtAuthenticationToken authentication
     ) {
 
-        Integer usuarioAutenticadoId =
+        Integer usuarioId =
                 obtenerIdDeUsuario(
                         authentication.getToken()
                 );
 
-        reporteGuardar.setUsuarioReportanteId(
-                usuarioAutenticadoId
+        dto.setUsuarioReportanteId(
+                usuarioId
         );
 
         ReporteSalida reporte =
                 reporteService.guardar(
-                        reporteGuardar
+                        dto
                 );
 
         return ResponseEntity
@@ -65,29 +63,89 @@ public class ReporteController {
                 .body(reporte);
     }
 
-    @GetMapping
+    @GetMapping("/mis-reportes")
     @PreAuthorize(
-            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+            "hasAnyRole('CLIENTE', 'TRABAJADOR')"
     )
-    public ResponseEntity<Page<ReporteSalida>> obtenerTodosPaginados(
-            Pageable pageable
+    public ResponseEntity<PaginaSalida<ReporteSalida>> obtenerMisReportes(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) EstadoReporte estado,
+            @RequestParam(required = false) TipoReporte tipo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            JwtAuthenticationToken authentication
     ) {
 
-        Page<ReporteSalida> reportes =
-                reporteService.obtenerTodosPaginados(
-                        pageable
+        Integer usuarioId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
                 );
 
+        ReporteFiltroDTO filtro =
+                new ReporteFiltroDTO();
+
+        filtro.setTexto(
+                texto
+        );
+
+        filtro.setEstado(
+                estado
+        );
+
+        filtro.setTipo(
+                tipo
+        );
+
+        filtro.setUsuarioReportanteId(
+                usuarioId
+        );
+
         return ResponseEntity.ok(
-                reportes
+                reporteService.buscarConFiltros(
+                        filtro,
+                        page,
+                        size
+                )
         );
     }
 
-    @GetMapping("/paginados")
+    @GetMapping("/mis-reportes/{id}")
+    @PreAuthorize(
+            "hasAnyRole('CLIENTE', 'TRABAJADOR')"
+    )
+    public ResponseEntity<ReporteSalida> obtenerMiReportePorId(
+            @PathVariable Long id,
+            JwtAuthenticationToken authentication
+    ) {
+
+        Integer usuarioId =
+                obtenerIdDeUsuario(
+                        authentication.getToken()
+                );
+
+        ReporteSalida reporte =
+                reporteService.obtenerPorId(
+                        id
+                );
+
+        if (!usuarioId.equals(
+                reporte.getUsuarioReportanteId()
+        )) {
+            throw new ReglaNegocioException(
+                    "No puede consultar un reporte perteneciente a otro usuario"
+            );
+        }
+
+        return ResponseEntity.ok(
+                reporte
+        );
+    }
+
+    @GetMapping("/admin")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
-    public ResponseEntity<PaginaSalida<ReporteSalida>> buscarConFiltros(
+    public ResponseEntity<PaginaSalida<ReporteSalida>> obtenerReportesAdmin(
             @RequestParam(required = false) String texto,
             @RequestParam(required = false) EstadoReporte estado,
             @RequestParam(required = false) TipoReporte tipo,
@@ -140,113 +198,31 @@ public class ReporteController {
                 fechaHasta
         );
 
-        PaginaSalida<ReporteSalida> reportes =
+        return ResponseEntity.ok(
                 reporteService.buscarConFiltros(
                         filtro,
                         page,
                         size
-                );
-
-        return ResponseEntity.ok(
-                reportes
+                )
         );
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/admin/{id}")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
-    public ResponseEntity<ReporteSalida> obtenerPorId(
+    public ResponseEntity<ReporteSalida> obtenerReporteAdmin(
             @PathVariable Long id
     ) {
 
-        ReporteSalida reporte =
+        return ResponseEntity.ok(
                 reporteService.obtenerPorId(
                         id
-                );
-
-        return ResponseEntity.ok(
-                reporte
+                )
         );
     }
 
-    @GetMapping("/estado/{estado}")
-    @PreAuthorize(
-            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
-    )
-    public ResponseEntity<Page<ReporteSalida>> obtenerPorEstado(
-            @PathVariable EstadoReporte estado,
-            Pageable pageable
-    ) {
-
-        Page<ReporteSalida> reportes =
-                reporteService.obtenerPorEstado(
-                        estado,
-                        pageable
-                );
-
-        return ResponseEntity.ok(
-                reportes
-        );
-    }
-
-    @GetMapping("/tipo/{tipo}")
-    @PreAuthorize(
-            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
-    )
-    public ResponseEntity<Page<ReporteSalida>> obtenerPorTipo(
-            @PathVariable TipoReporte tipo,
-            Pageable pageable
-    ) {
-
-        Page<ReporteSalida> reportes =
-                reporteService.obtenerPorTipo(
-                        tipo,
-                        pageable
-                );
-
-        return ResponseEntity.ok(
-                reportes
-        );
-    }
-
-    @GetMapping("/reportante/{usuarioReportanteId}")
-    @PreAuthorize(
-            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
-    )
-    public ResponseEntity<List<ReporteSalida>> obtenerPorUsuarioReportante(
-            @PathVariable Integer usuarioReportanteId
-    ) {
-
-        List<ReporteSalida> reportes =
-                reporteService.obtenerPorUsuarioReportante(
-                        usuarioReportanteId
-                );
-
-        return ResponseEntity.ok(
-                reportes
-        );
-    }
-
-    @GetMapping("/reportado/{usuarioReportadoId}")
-    @PreAuthorize(
-            "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
-    )
-    public ResponseEntity<List<ReporteSalida>> obtenerPorUsuarioReportado(
-            @PathVariable Integer usuarioReportadoId
-    ) {
-
-        List<ReporteSalida> reportes =
-                reporteService.obtenerPorUsuarioReportado(
-                        usuarioReportadoId
-                );
-
-        return ResponseEntity.ok(
-                reportes
-        );
-    }
-
-    @PutMapping("/{id}/iniciar-revision")
+    @PutMapping("/admin/{id}/iniciar-revision")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
@@ -254,23 +230,20 @@ public class ReporteController {
             @PathVariable Long id
     ) {
 
-        ReporteSalida reporte =
+        return ResponseEntity.ok(
                 reporteService.iniciarRevision(
                         id
-                );
-
-        return ResponseEntity.ok(
-                reporte
+                )
         );
     }
 
-    @PutMapping("/{id}/resolver")
+    @PutMapping("/admin/{id}/resolver")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<ReporteSalida> resolver(
             @PathVariable Long id,
-            @Valid @RequestBody ReporteResolucion reporteResolucion,
+            @Valid @RequestBody ReporteResolucion dto,
             JwtAuthenticationToken authentication
     ) {
 
@@ -279,25 +252,22 @@ public class ReporteController {
                         authentication.getToken()
                 );
 
-        ReporteSalida reporte =
+        return ResponseEntity.ok(
                 reporteService.resolver(
                         id,
-                        reporteResolucion,
+                        dto,
                         administradorId
-                );
-
-        return ResponseEntity.ok(
-                reporte
+                )
         );
     }
 
-    @PutMapping("/{id}/rechazar")
+    @PutMapping("/admin/{id}/rechazar")
     @PreAuthorize(
             "hasAnyRole('ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<ReporteSalida> rechazar(
             @PathVariable Long id,
-            @Valid @RequestBody ReporteRechazo reporteRechazo,
+            @Valid @RequestBody ReporteRechazo dto,
             JwtAuthenticationToken authentication
     ) {
 
@@ -306,15 +276,12 @@ public class ReporteController {
                         authentication.getToken()
                 );
 
-        ReporteSalida reporte =
+        return ResponseEntity.ok(
                 reporteService.rechazar(
                         id,
-                        reporteRechazo,
+                        dto,
                         administradorId
-                );
-
-        return ResponseEntity.ok(
-                reporte
+                )
         );
     }
 
@@ -344,7 +311,9 @@ public class ReporteController {
         }
 
         try {
-            return Integer.valueOf(id);
+            return Integer.valueOf(
+                    id
+            );
         } catch (NumberFormatException exception) {
             throw new ReglaNegocioException(
                     "El identificador del usuario autenticado no es válido"

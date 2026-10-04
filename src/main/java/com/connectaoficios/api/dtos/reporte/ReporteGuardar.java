@@ -11,7 +11,6 @@ import lombok.Setter;
 @Setter
 public class ReporteGuardar {
 
-    @NotNull(message = "El usuario reportante es obligatorio")
     private Integer usuarioReportanteId;
 
     private Integer usuarioReportadoId;
