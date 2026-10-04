@@ -18,34 +18,42 @@ import java.util.Optional;
 public interface IServicioRepository
         extends JpaRepository<Servicio, Long> {
 
-    Optional<Servicio> findByIdAndEliminadoFalse(Long id);
+    Optional<Servicio> findByIdAndEliminadoFalse(
+            Long id
+    );
 
-    List<Servicio> findAllByEliminadoFalseOrderByFechaCreacionDesc();
+    List<Servicio>
+    findAllByEliminadoFalseOrderByFechaCreacionDesc();
 
-    List<Servicio> findAllByEliminadoFalseAndEstadoOrderByFechaCreacionDesc(
+    List<Servicio>
+    findAllByEliminadoFalseAndEstadoOrderByFechaCreacionDesc(
             EstadoServicio estado
     );
 
-    List<Servicio> findAllByPerfilTrabajadorIdAndEliminadoFalseOrderByFechaCreacionDesc(
+    List<Servicio>
+    findAllByPerfilTrabajadorIdAndEliminadoFalseOrderByFechaCreacionDesc(
             Long perfilTrabajadorId
     );
 
-    List<Servicio> findAllByCategoriaIdAndEliminadoFalseOrderByFechaCreacionDesc(
+    List<Servicio>
+    findAllByCategoriaIdAndEliminadoFalseOrderByFechaCreacionDesc(
             Long categoriaId
     );
 
-
-    Page<Servicio> findAllByEliminadoFalseAndEstado(
+    Page<Servicio>
+    findAllByEliminadoFalseAndEstado(
             EstadoServicio estado,
             Pageable pageable
     );
 
-    Page<Servicio> findAllByPerfilTrabajadorIdAndEliminadoFalse(
+    Page<Servicio>
+    findAllByPerfilTrabajadorIdAndEliminadoFalse(
             Long perfilTrabajadorId,
             Pageable pageable
     );
 
-    Page<Servicio> findAllByCategoriaIdAndEliminadoFalse(
+    Page<Servicio>
+    findAllByCategoriaIdAndEliminadoFalse(
             Long categoriaId,
             Pageable pageable
     );
@@ -83,7 +91,6 @@ public interface IServicioRepository
             Pageable pageable
     );
 
-
     @Query("""
             SELECT DISTINCT s
             FROM Servicio s
@@ -93,10 +100,21 @@ public interface IServicioRepository
             WHERE s.eliminado = false
               AND (:categoriaId IS NULL OR s.categoria.id = :categoriaId)
               AND (:zonaId IS NULL OR z.id = :zonaId)
-              AND (:diaSemana IS NULL
-                   OR (d.diaSemana = :diaSemana AND d.activo = true))
-              AND (:tarifaMinima IS NULL OR s.tarifaMinima >= :tarifaMinima)
-              AND (:tarifaMaxima IS NULL OR s.tarifaMinima <= :tarifaMaxima)
+              AND (
+                    :diaSemana IS NULL
+                    OR (
+                        d.diaSemana = :diaSemana
+                        AND d.activo = true
+                    )
+                  )
+              AND (
+                    :tarifaMinima IS NULL
+                    OR s.tarifaMinima >= :tarifaMinima
+                  )
+              AND (
+                    :tarifaMaxima IS NULL
+                    OR s.tarifaMinima <= :tarifaMaxima
+                  )
             ORDER BY s.fechaCreacion DESC
             """)
     List<Servicio> buscarConFiltros(
@@ -115,28 +133,26 @@ public interface IServicioRepository
                     LEFT JOIN DisponibilidadServicio d
                         ON d.servicio.id = s.id
                     WHERE s.eliminado = false
-
                       AND (
                             :texto IS NULL
-                            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))
-                            OR LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.titulo)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.descripcion)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
                           )
-
                       AND (
                             :perfilTrabajadorId IS NULL
-                            OR s.perfilTrabajador.id = :perfilTrabajadorId
+                            OR s.perfilTrabajador.id =
+                               :perfilTrabajadorId
                           )
-
                       AND (
                             :categoriaId IS NULL
                             OR s.categoria.id = :categoriaId
                           )
-
                       AND (
                             :zonaId IS NULL
                             OR z.id = :zonaId
                           )
-
                       AND (
                             :diaSemana IS NULL
                             OR (
@@ -144,17 +160,14 @@ public interface IServicioRepository
                                 AND d.activo = true
                             )
                           )
-
                       AND (
                             :estado IS NULL
                             OR s.estado = :estado
                           )
-
                       AND (
                             :tarifaMinima IS NULL
                             OR s.tarifaMinima >= :tarifaMinima
                           )
-
                       AND (
                             :tarifaMaxima IS NULL
                             OR s.tarifaMinima <= :tarifaMaxima
@@ -167,28 +180,26 @@ public interface IServicioRepository
                     LEFT JOIN DisponibilidadServicio d
                         ON d.servicio.id = s.id
                     WHERE s.eliminado = false
-
                       AND (
                             :texto IS NULL
-                            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))
-                            OR LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.titulo)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.descripcion)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
                           )
-
                       AND (
                             :perfilTrabajadorId IS NULL
-                            OR s.perfilTrabajador.id = :perfilTrabajadorId
+                            OR s.perfilTrabajador.id =
+                               :perfilTrabajadorId
                           )
-
                       AND (
                             :categoriaId IS NULL
                             OR s.categoria.id = :categoriaId
                           )
-
                       AND (
                             :zonaId IS NULL
                             OR z.id = :zonaId
                           )
-
                       AND (
                             :diaSemana IS NULL
                             OR (
@@ -196,17 +207,14 @@ public interface IServicioRepository
                                 AND d.activo = true
                             )
                           )
-
                       AND (
                             :estado IS NULL
                             OR s.estado = :estado
                           )
-
                       AND (
                             :tarifaMinima IS NULL
                             OR s.tarifaMinima >= :tarifaMinima
                           )
-
                       AND (
                             :tarifaMaxima IS NULL
                             OR s.tarifaMinima <= :tarifaMaxima
@@ -215,7 +223,8 @@ public interface IServicioRepository
     )
     Page<Servicio> buscarConFiltrosPaginado(
             @Param("texto") String texto,
-            @Param("perfilTrabajadorId") Long perfilTrabajadorId,
+            @Param("perfilTrabajadorId")
+            Long perfilTrabajadorId,
             @Param("categoriaId") Long categoriaId,
             @Param("zonaId") Long zonaId,
             @Param("diaSemana") DiaSemana diaSemana,
@@ -231,13 +240,77 @@ public interface IServicioRepository
             WHERE s.eliminado = false
               AND s.estado = :estado
               AND (
-                    LOWER(s.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))
-                    OR LOWER(s.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))
+                    LOWER(s.titulo)
+                        LIKE LOWER(CONCAT('%', :texto, '%'))
+                    OR LOWER(s.descripcion)
+                        LIKE LOWER(CONCAT('%', :texto, '%'))
                   )
             ORDER BY s.titulo ASC
             """)
     List<Servicio> buscarParaAutocomplete(
             @Param("texto") String texto,
+            @Param("estado") EstadoServicio estado,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+                    SELECT s
+                    FROM Servicio s
+                    JOIN s.perfilTrabajador p
+                    JOIN s.categoria c
+                    WHERE s.eliminado = false
+                      AND (
+                            :texto IS NULL
+                            OR LOWER(s.titulo)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.descripcion)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
+                          )
+                      AND (
+                            :trabajadorId IS NULL
+                            OR p.trabajadorId = :trabajadorId
+                          )
+                      AND (
+                            :categoriaId IS NULL
+                            OR c.id = :categoriaId
+                          )
+                      AND (
+                            :estado IS NULL
+                            OR s.estado = :estado
+                          )
+                    """,
+            countQuery = """
+                    SELECT COUNT(s)
+                    FROM Servicio s
+                    JOIN s.perfilTrabajador p
+                    JOIN s.categoria c
+                    WHERE s.eliminado = false
+                      AND (
+                            :texto IS NULL
+                            OR LOWER(s.titulo)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
+                            OR LOWER(s.descripcion)
+                                LIKE LOWER(CONCAT('%', :texto, '%'))
+                          )
+                      AND (
+                            :trabajadorId IS NULL
+                            OR p.trabajadorId = :trabajadorId
+                          )
+                      AND (
+                            :categoriaId IS NULL
+                            OR c.id = :categoriaId
+                          )
+                      AND (
+                            :estado IS NULL
+                            OR s.estado = :estado
+                          )
+                    """
+    )
+    Page<Servicio> buscarParaAdministracion(
+            @Param("texto") String texto,
+            @Param("trabajadorId") Integer trabajadorId,
+            @Param("categoriaId") Long categoriaId,
             @Param("estado") EstadoServicio estado,
             Pageable pageable
     );
