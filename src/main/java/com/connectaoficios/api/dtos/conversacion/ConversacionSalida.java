@@ -13,6 +13,8 @@ public class ConversacionSalida {
     private Long solicitudId;
     private Integer clienteId;
     private Integer trabajadorId;
+    private String clienteFotoUrl;
+    private String trabajadorFotoUrl;
     private LocalDateTime fechaCreacion;
     private Boolean puedeEnviarMensajes;
 }

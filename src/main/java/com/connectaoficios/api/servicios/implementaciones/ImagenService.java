@@ -30,8 +30,22 @@ public class ImagenService implements IImagenService {
             Integer trabajadorId
     ) {
 
+        return subirFoto(archivo, trabajadorId, "trabajador");
+    }
+
+    @Override
+    public String subirFotoPerfilCliente(MultipartFile archivo, Integer clienteId) {
+        return subirFoto(archivo, clienteId, "cliente");
+    }
+
+    @Override
+    public String subirFotoPerfilAdministrador(MultipartFile archivo, Integer administradorId) {
+        return subirFoto(archivo, administradorId, "administrador");
+    }
+
+    private String subirFoto(MultipartFile archivo, Integer trabajadorId, String tipo) {
         validarArchivo(archivo);
-        validarTrabajador(trabajadorId);
+        validarUsuario(trabajadorId);
 
         try {
 
@@ -42,7 +56,7 @@ public class ImagenService implements IImagenService {
                                     "folder",
                                     "connectaoficios/perfiles",
                                     "public_id",
-                                    "trabajador_" + trabajadorId,
+                                    tipo + "_" + trabajadorId,
                                     "overwrite",
                                     true,
                                     "invalidate",
@@ -95,7 +109,7 @@ public class ImagenService implements IImagenService {
         }
     }
 
-    private void validarTrabajador(
+    private void validarUsuario(
             Integer trabajadorId
     ) {
 
@@ -103,7 +117,7 @@ public class ImagenService implements IImagenService {
                 || trabajadorId <= 0) {
 
             throw new ReglaNegocioException(
-                    "El identificador del trabajador no es válido"
+                    "El identificador del usuario no es válido"
             );
         }
     }

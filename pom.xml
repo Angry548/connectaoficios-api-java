@@ -29,6 +29,8 @@
 		<springdoc.version>3.1.1</springdoc.version>
 		<modelmapper.version>3.2.4</modelmapper.version>
 		<cloudinary.version>2.3.0</cloudinary.version>
+		<maven-site-plugin.version>3.22.0</maven-site-plugin.version>
+		<jacoco.version>0.8.14</jacoco.version>
 	</properties>
 
 	<dependencies>
@@ -142,6 +144,35 @@
 		<plugins>
 
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<!-- Version administrada por Spring Boot: 3.5.6. -->
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>${maven-site-plugin.version}</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals><goal>prepare-agent</goal></goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals><goal>report</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
@@ -165,5 +196,25 @@
 
 		</plugins>
 	</build>
+
+	<reporting>
+		<excludeDefaults>true</excludeDefaults>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>${maven-surefire-plugin.version}</version>
+				<configuration>
+					<outputName>surefire-report</outputName>
+					<linkXRef>false</linkXRef>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<reports><report>report-only</report></reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
 
 </project>

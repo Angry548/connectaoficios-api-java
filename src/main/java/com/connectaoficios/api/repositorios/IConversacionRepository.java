@@ -24,7 +24,7 @@ public interface IConversacionRepository
             value = """
                     SELECT c
                     FROM Conversacion c
-                    JOIN c.solicitud s
+                    JOIN FETCH c.solicitud s
                     WHERE
                         (
                             s.clienteId = :usuarioId

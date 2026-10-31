@@ -20,6 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import com.connectaoficios.api.repositorios.IPerfilClienteRepository;
+import com.connectaoficios.api.repositorios.IPerfilTrabajadorRepository;
 
 @Service
 public class ConversacionService implements IConversacionService {
@@ -28,13 +32,19 @@ public class ConversacionService implements IConversacionService {
 
     private final IConversacionRepository conversacionRepository;
     private final ISolicitudServicioRepository solicitudServicioRepository;
+    private final IPerfilClienteRepository perfilClienteRepository;
+    private final IPerfilTrabajadorRepository perfilTrabajadorRepository;
 
     public ConversacionService(
             IConversacionRepository conversacionRepository,
-            ISolicitudServicioRepository solicitudServicioRepository
+            ISolicitudServicioRepository solicitudServicioRepository,
+            IPerfilClienteRepository perfilClienteRepository,
+            IPerfilTrabajadorRepository perfilTrabajadorRepository
     ) {
         this.conversacionRepository = conversacionRepository;
         this.solicitudServicioRepository = solicitudServicioRepository;
+        this.perfilClienteRepository = perfilClienteRepository;
+        this.perfilTrabajadorRepository = perfilTrabajadorRepository;
     }
 
     @Override
@@ -164,7 +174,7 @@ public class ConversacionService implements IConversacionService {
                         tamanio
                 );
 
-        Page<ConversacionSalida> resultado =
+        Page<Conversacion> conversaciones =
                 conversacionRepository
                         .buscarConversacionesUsuario(
                                 usuarioId,
@@ -174,8 +184,22 @@ public class ConversacionService implements IConversacionService {
                                 filtro.getFechaHasta(),
                                 filtro.getPuedeEnviarMensajes(),
                                 pageable
-                        )
-                        .map(this::convertirASalida);
+                        );
+
+        Map<Integer, String> fotosClientes = new HashMap<>();
+        Map<Integer, String> fotosTrabajadores = new HashMap<>();
+        if (!conversaciones.isEmpty()) {
+            Set<Integer> clientes = conversaciones.stream()
+                    .map(c -> c.getSolicitud().getClienteId()).collect(Collectors.toSet());
+            Set<Integer> trabajadores = conversaciones.stream()
+                    .map(c -> c.getSolicitud().getTrabajadorId()).collect(Collectors.toSet());
+            perfilClienteRepository.findByClienteIdIn(clientes)
+                    .forEach(p -> fotosClientes.put(p.getClienteId(), p.getFotoUrl()));
+            perfilTrabajadorRepository.findByTrabajadorIdIn(trabajadores)
+                    .forEach(p -> fotosTrabajadores.put(p.getTrabajadorId(), p.getFotoUrl()));
+        }
+        Page<ConversacionSalida> resultado = conversaciones.map(c ->
+                convertirASalida(c, fotosClientes, fotosTrabajadores));
 
         return PaginaSalida.desde(
                 resultado
@@ -297,12 +321,25 @@ public class ConversacionService implements IConversacionService {
     private ConversacionSalida convertirASalida(
             Conversacion conversacion
     ) {
+        Map<Integer, String> clientes = new HashMap<>();
+        Map<Integer, String> trabajadores = new HashMap<>();
+        perfilClienteRepository.findByClienteId(conversacion.getSolicitud().getClienteId())
+                .ifPresent(p -> clientes.put(p.getClienteId(), p.getFotoUrl()));
+        perfilTrabajadorRepository.findByTrabajadorId(conversacion.getSolicitud().getTrabajadorId())
+                .ifPresent(p -> trabajadores.put(p.getTrabajadorId(), p.getFotoUrl()));
+        return convertirASalida(conversacion, clientes, trabajadores);
+    }
+
+    private ConversacionSalida convertirASalida(Conversacion conversacion,
+            Map<Integer, String> clientes, Map<Integer, String> trabajadores) {
 
         SolicitudServicio solicitud =
                 conversacion.getSolicitud();
 
         ConversacionSalida salida =
                 new ConversacionSalida();
+        salida.setClienteFotoUrl(clientes.get(solicitud.getClienteId()));
+        salida.setTrabajadorFotoUrl(trabajadores.get(solicitud.getTrabajadorId()));
 
         salida.setId(
                 conversacion.getId()

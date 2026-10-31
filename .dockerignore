@@ -10,5 +10,15 @@ target/
 .env
 .env.*
 application-local.properties
+application-secrets.properties
+.aws/
+.codex/
+.agents/
+*.pem
+*.key
+saul/
+tools/
+docs/
+build/
 
 README.md

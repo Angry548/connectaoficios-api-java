@@ -15,6 +15,8 @@ import java.util.Optional;
 public interface IPerfilTrabajadorRepository
         extends JpaRepository<PerfilTrabajador, Long> {
 
+    List<PerfilTrabajador> findByTrabajadorIdIn(java.util.Collection<Integer> trabajadorIds);
+
     Optional<PerfilTrabajador> findByTrabajadorId(
             Integer trabajadorId
     );

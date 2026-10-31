@@ -29,22 +29,29 @@ public class ImagenController {
             value = "/perfil",
             consumes = "multipart/form-data"
     )
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasAnyRole('TRABAJADOR', 'CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')")
     public ResponseEntity<FotoPerfilSalida> subirFotoPerfil(
             @RequestPart("archivo")
             MultipartFile archivo,
             @AuthenticationPrincipal
-            Jwt jwt
+            Jwt jwt,
+            org.springframework.security.core.Authentication authentication
     ) {
 
-        Integer trabajadorId =
+        Integer usuarioId =
                 obtenerUsuarioId(jwt);
 
-        String fotoUrl =
-                imagenService.subirFotoPerfil(
-                        archivo,
-                        trabajadorId
-                );
+        String fotoUrl;
+        if (authentication.getAuthorities().stream().anyMatch(a ->
+                a.getAuthority().equals("ROLE_ADMINISTRADOR")
+                        || a.getAuthority().equals("ROLE_ADMINISTRADORPRINCIPAL"))) {
+            fotoUrl = imagenService.subirFotoPerfilAdministrador(archivo, usuarioId);
+        } else if (authentication.getAuthorities().stream().anyMatch(a ->
+                a.getAuthority().equals("ROLE_CLIENTE"))) {
+            fotoUrl = imagenService.subirFotoPerfilCliente(archivo, usuarioId);
+        } else {
+            fotoUrl = imagenService.subirFotoPerfil(archivo, usuarioId);
+        }
 
         return ResponseEntity.ok(
                 new FotoPerfilSalida(

@@ -31,6 +31,11 @@ class ConversacionServiceTest {
     @Mock
     private ISolicitudServicioRepository solicitudServicioRepository;
 
+    @Mock
+    private com.connectaoficios.api.repositorios.IPerfilClienteRepository perfilClienteRepository;
+    @Mock
+    private com.connectaoficios.api.repositorios.IPerfilTrabajadorRepository perfilTrabajadorRepository;
+
     private ConversacionService conversacionService;
 
     private SolicitudServicio solicitud;
@@ -41,7 +46,9 @@ class ConversacionServiceTest {
         conversacionService =
                 new ConversacionService(
                         conversacionRepository,
-                        solicitudServicioRepository
+                        solicitudServicioRepository,
+                        perfilClienteRepository,
+                        perfilTrabajadorRepository
                 );
 
         solicitud = new SolicitudServicio();
@@ -51,6 +58,68 @@ class ConversacionServiceTest {
         solicitud.setEstado(
                 EstadoSolicitud.ACEPTADA
         );
+    }
+
+    @Test
+    void obtener_resuelveFotosDeAmbosParticipantes() {
+        var cliente = new com.connectaoficios.api.modelos.PerfilCliente();
+        cliente.setClienteId(10);
+        cliente.setFotoUrl("cliente.png");
+        var trabajador = new com.connectaoficios.api.modelos.PerfilTrabajador();
+        trabajador.setTrabajadorId(20);
+        trabajador.setFotoUrl("trabajador.png");
+        var conversacion = new Conversacion();
+        conversacion.setSolicitud(solicitud);
+        when(conversacionRepository.findById(1L)).thenReturn(Optional.of(conversacion));
+        when(perfilClienteRepository.findByClienteId(10)).thenReturn(Optional.of(cliente));
+        when(perfilTrabajadorRepository.findByTrabajadorId(20)).thenReturn(Optional.of(trabajador));
+        var resultado = conversacionService.obtenerPorId(1L, 10);
+        assertEquals("cliente.png", resultado.getClienteFotoUrl());
+        assertEquals("trabajador.png", resultado.getTrabajadorFotoUrl());
+    }
+
+    @Test
+    void obtener_sinPerfilesDevuelveFotosNulas() {
+        var conversacion = new Conversacion();
+        conversacion.setSolicitud(solicitud);
+        when(conversacionRepository.findById(1L)).thenReturn(Optional.of(conversacion));
+        var resultado = conversacionService.obtenerPorId(1L, 20);
+        assertNull(resultado.getClienteFotoUrl());
+        assertNull(resultado.getTrabajadorFotoUrl());
+    }
+
+    @Test
+    void listado_cargaFotosEnLoteYConservaParticipantes() {
+        var otra = new SolicitudServicio();
+        otra.setClienteId(11);
+        otra.setTrabajadorId(21);
+        var primera = new Conversacion();
+        primera.setSolicitud(solicitud);
+        var segunda = new Conversacion();
+        segunda.setSolicitud(otra);
+        var cliente = new com.connectaoficios.api.modelos.PerfilCliente();
+        cliente.setClienteId(11);
+        cliente.setFotoUrl("cliente11.png");
+        var trabajador = new com.connectaoficios.api.modelos.PerfilTrabajador();
+        trabajador.setTrabajadorId(20);
+        trabajador.setFotoUrl("trabajador20.png");
+        when(conversacionRepository.buscarConversacionesUsuario(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of(primera, segunda)));
+        when(perfilClienteRepository.findByClienteIdIn(java.util.Set.of(10, 11)))
+                .thenReturn(java.util.List.of(cliente));
+        when(perfilTrabajadorRepository.findByTrabajadorIdIn(java.util.Set.of(20, 21)))
+                .thenReturn(java.util.List.of(trabajador));
+        var resultado = conversacionService.buscarConversaciones(
+                new com.connectaoficios.api.dtos.conversacion.ConversacionFiltroDTO(), 10, 0, 20);
+        verify(perfilClienteRepository).findByClienteIdIn(java.util.Set.of(10, 11));
+        verify(perfilTrabajadorRepository).findByTrabajadorIdIn(java.util.Set.of(20, 21));
+        verify(perfilClienteRepository, never()).findByClienteId(any());
+        verify(perfilTrabajadorRepository, never()).findByTrabajadorId(any());
+        assertNotNull(resultado);
+        assertNull(resultado.getContenido().get(0).getClienteFotoUrl());
+        assertEquals("trabajador20.png", resultado.getContenido().get(0).getTrabajadorFotoUrl());
+        assertEquals("cliente11.png", resultado.getContenido().get(1).getClienteFotoUrl());
+        assertNull(resultado.getContenido().get(1).getTrabajadorFotoUrl());
     }
 
     @Test
