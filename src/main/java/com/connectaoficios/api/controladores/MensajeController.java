@@ -4,6 +4,7 @@ import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.dtos.mensaje.MensajeFiltroDTO;
 import com.connectaoficios.api.dtos.mensaje.MensajeGuardar;
 import com.connectaoficios.api.dtos.mensaje.MensajeSalida;
+import com.connectaoficios.api.dtos.mensaje.MensajesNoLeidosTotalSalida;
 import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.servicios.interfaces.IMensajeService;
 import jakarta.validation.Valid;
@@ -178,6 +179,15 @@ public class MensajeController {
         return ResponseEntity.ok(
                 cantidad
         );
+    }
+
+    @GetMapping("/no-leidos/total")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'TRABAJADOR')")
+    public ResponseEntity<MensajesNoLeidosTotalSalida> contarTotalNoLeidos(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        long total = mensajeService.contarTotalNoLeidos(obtenerUsuarioId(jwt));
+        return ResponseEntity.ok(new MensajesNoLeidosTotalSalida(total));
     }
 
     private Integer obtenerUsuarioId(

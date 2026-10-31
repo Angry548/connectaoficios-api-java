@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface IMensajeService {
 
+    long contarTotalNoLeidos(Integer usuarioId);
+
     MensajeSalida guardar(
             MensajeGuardar mensajeGuardar,
             Integer remitenteId

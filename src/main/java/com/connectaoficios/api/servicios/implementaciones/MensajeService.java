@@ -269,6 +269,12 @@ public class MensajeService implements IMensajeService {
                 );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public long contarTotalNoLeidos(Integer usuarioId) {
+        return mensajeRepository.contarTotalNoLeidos(usuarioId);
+    }
+
     private Pageable crearPageable(
             int pagina,
             int tamanio

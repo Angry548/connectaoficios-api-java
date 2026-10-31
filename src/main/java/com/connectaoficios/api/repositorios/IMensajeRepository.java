@@ -23,6 +23,17 @@ public interface IMensajeRepository
             Long conversacionId
     );
 
+    @Query("""
+            SELECT COUNT(m)
+            FROM Mensaje m
+            JOIN m.conversacion c
+            JOIN c.solicitud s
+            WHERE m.leido = false
+              AND m.remitenteId <> :usuarioId
+              AND (s.clienteId = :usuarioId OR s.trabajadorId = :usuarioId)
+            """)
+    long contarTotalNoLeidos(@Param("usuarioId") Integer usuarioId);
+
     long countByConversacionIdAndLeidoFalseAndRemitenteIdNot(
             Long conversacionId,
             Integer remitenteId
