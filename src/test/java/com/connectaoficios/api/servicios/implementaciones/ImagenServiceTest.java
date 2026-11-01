@@ -40,4 +40,10 @@ class ImagenServiceTest {
         assertThrows(ReglaNegocioException.class, () -> service.subirFotoPerfilCliente(
                 new MockMultipartFile("archivo", "foto.png", "image/png", new byte[5 * 1024 * 1024 + 1]), 10));
     }
+ @Test void archivoVacio(){var s=new ImagenService(mock(Cloudinary.class)); assertThrows(ReglaNegocioException.class,()->s.subirFotoPerfil(new MockMultipartFile("archivo",new byte[0]),1));}
+ @Test void sobreLimite(){var s=new ImagenService(mock(Cloudinary.class)); assertThrows(ReglaNegocioException.class,()->s.subirFotoPerfil(new MockMultipartFile("archivo","x.png","image/png",new byte[5*1024*1024+1]),1));}
+ @Test void mimeInvalido(){var s=new ImagenService(mock(Cloudinary.class)); assertThrows(ReglaNegocioException.class,()->s.subirFotoPerfil(new MockMultipartFile("archivo","x.txt","text/plain",new byte[]{1}),1));}
+ @Test void proveedorFalla() throws Exception {var c=mock(Cloudinary.class,RETURNS_DEEP_STUBS); when(c.uploader().upload(any(byte[].class),anyMap())).thenThrow(new java.io.IOException("fallo")); var s=new ImagenService(c); assertThrows(ReglaNegocioException.class,()->s.subirFotoPerfil(new MockMultipartFile("archivo","x.png","image/png",new byte[]{1}),1));}
+ @Test void exactamenteCincoMbPermitidos() throws Exception {var c=mock(Cloudinary.class,RETURNS_DEEP_STUBS); when(c.uploader().upload(any(byte[].class),anyMap())).thenReturn(Map.of("secure_url","https://example.invalid/photo.png")); var s=new ImagenService(c); assertNotNull(s.subirFotoPerfil(new MockMultipartFile("archivo","x.png","image/png",new byte[5*1024*1024]),1));}
+
 }

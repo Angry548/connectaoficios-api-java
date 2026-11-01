@@ -54,6 +54,8 @@ class PromocionServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(promocionRepository.findByEstado(eq(EstadoPromocion.ACTIVA), eq(org.springframework.data.domain.Pageable.unpaged())))
+                .thenReturn(org.springframework.data.domain.Page.empty());
 
         promocionService = new PromocionService(
                 promocionRepository,
@@ -288,4 +290,6 @@ class PromocionServiceTest {
                 () -> promocionService.obtenerPorId(99L)
         );
     }
+ @Test void vencimientoAutomaticoEsIdempotente(){reset(promocionRepository);promocion.setEstado(EstadoPromocion.ACTIVA); promocion.setFechaFin(LocalDateTime.now().minusDays(1)); doReturn(new org.springframework.data.domain.PageImpl<>(List.of(promocion)),org.springframework.data.domain.Page.empty()).when(promocionRepository).findByEstado(eq(EstadoPromocion.ACTIVA),any(org.springframework.data.domain.Pageable.class)); when(promocionRepository.findById(1L)).thenReturn(Optional.of(promocion)); assertFalse(promocionService.estaVigente(1L)); assertFalse(promocionService.estaVigente(1L)); assertEquals(EstadoPromocion.FINALIZADA,promocion.getEstado()); verify(promocionRepository,times(1)).saveAll(List.of(promocion));}
+
 }

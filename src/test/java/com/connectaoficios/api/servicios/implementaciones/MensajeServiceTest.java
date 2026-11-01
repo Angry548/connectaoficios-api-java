@@ -335,4 +335,6 @@ class MensajeServiceTest {
 
         return mensaje;
     }
+ @Test void lecturaIdempotente(){var m=new Mensaje();m.setId(1L);m.setConversacion(conversacion);m.setRemitenteId(20);when(mensajeRepository.findById(1L)).thenReturn(Optional.of(m));mensajeService.marcarComoLeido(1L,10);mensajeService.marcarComoLeido(1L,10);verify(mensajeRepository,times(1)).save(m);}
+ @Test void lecturaPorAjenoDenegada(){var m=new Mensaje();m.setId(1L);m.setConversacion(conversacion);m.setRemitenteId(20);when(mensajeRepository.findById(1L)).thenReturn(Optional.of(m));assertThrows(ReglaNegocioException.class,()->mensajeService.marcarComoLeido(1L,99));verify(mensajeRepository,never()).save(any());}
 }

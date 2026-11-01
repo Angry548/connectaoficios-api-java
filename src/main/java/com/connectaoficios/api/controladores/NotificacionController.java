@@ -25,7 +25,7 @@ public class NotificacionController {
 
     @GetMapping
     @PreAuthorize(
-            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
+            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<Page<NotificacionRespuesta>> listarMisNotificaciones(
             @RequestParam(required = false) Boolean leida,
@@ -47,7 +47,7 @@ public class NotificacionController {
 
     @GetMapping("/no-leidas/count")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
+            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<Map<String, Long>> contarNoLeidas(
             @AuthenticationPrincipal Jwt jwt
@@ -69,7 +69,7 @@ public class NotificacionController {
 
     @GetMapping("/{id}")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
+            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<NotificacionRespuesta> obtenerPorId(
             @PathVariable Long id,
@@ -87,7 +87,7 @@ public class NotificacionController {
 
     @PatchMapping("/{id}/leer")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
+            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<NotificacionRespuesta> marcarComoLeida(
             @PathVariable Long id,
@@ -105,7 +105,7 @@ public class NotificacionController {
 
     @PatchMapping("/{id}/no-leida")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
+            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<NotificacionRespuesta> marcarComoNoLeida(
             @PathVariable Long id,
@@ -123,7 +123,7 @@ public class NotificacionController {
 
     @PatchMapping("/leer-todas")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADOR_PRINCIPAL')"
+            "hasAnyRole('CLIENTE','TRABAJADOR','ADMINISTRADOR','ADMINISTRADORPRINCIPAL')"
     )
     public ResponseEntity<Map<String, Object>> marcarTodasComoLeidas(
             @AuthenticationPrincipal Jwt jwt
@@ -145,27 +145,7 @@ public class NotificacionController {
         );
     }
 
-    private Integer obtenerUsuarioId(
-            Jwt jwt
-    ) {
-        if (
-                jwt == null ||
-                        jwt.getSubject() == null ||
-                        jwt.getSubject().isBlank()
-        ) {
-            throw new RuntimeException(
-                    "No se pudo identificar al usuario autenticado."
-            );
-        }
-
-        try {
-            return Integer.valueOf(
-                    jwt.getSubject()
-            );
-        } catch (NumberFormatException ex) {
-            throw new RuntimeException(
-                    "El identificador del usuario autenticado no es válido."
-            );
-        }
+    private Integer obtenerUsuarioId(Jwt jwt) {
+        return com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
     }
 }

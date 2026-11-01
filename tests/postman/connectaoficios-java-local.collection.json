@@ -1,0 +1,1086 @@
+{
+  "info": {
+    "name": "ConnectaOficios Java - integración LOCAL",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo Docker local. Seed aplicado y perfil trabajador existente, cuentas/tokens de .NET local. Genera datos de dominio; no crea cuentas ni realiza login."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const base = pm.environment.get('baseUrl');",
+          "if (!/^http:\\/\\/(localhost|127\\.0\\.0\\.1):8081$/.test(base || '')) throw new Error('Solo localhost:8081');",
+          "const destino = pm.variables.replaceIn(pm.request.url.toString());",
+          "if (!destino.startsWith(base + '/')) throw new Error('Destino fuera del entorno local');",
+          "pm.variables.set('fechaFutura', new Date(Date.now()+86400000).toISOString().slice(0,10));",
+          "pm.variables.set('runId', Date.now().toString());"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 OpenAPI",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/v3/api-docs"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo openapi', () => pm.expect(pm.response.json()).to.have.property('openapi'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 JWT requerido",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/servicios"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Categorías seed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/categorias"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "const row=pm.response.json().find(x=>x.nombre==='TEST_LOCAL_Electricidad'); pm.test('Existe categoría seed',()=>pm.expect(row).to.be.an('object')); if(row)pm.environment.set('categoriaId',row.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Zonas seed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/zonas-cobertura"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "const row=pm.response.json().find(x=>x.localidad==='TEST_LOCAL_Centro'); pm.test('Existe zona seed',()=>pm.expect(row).to.be.an('object')); if(row)pm.environment.set('zonaId',row.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Plan seed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/planes-promocion/activos"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "const row=pm.response.json().find(x=>x.nombre==='TEST_LOCAL_Semanal'); pm.test('Existe plan seed',()=>pm.expect(row).to.be.an('object')); if(row){pm.environment.set('planId',row.id);pm.environment.set('planPrecio',row.precio);}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Perfil existente del trabajador",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/perfiles-trabajador/trabajador/{{trabajadorId}}"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+              "if (pm.response.code < 300) pm.environment.set('perfilTrabajadorId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Crear servicio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/servicios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"perfilTrabajadorId\": {{perfilTrabajadorId}},\n  \"categoriaId\": {{categoriaId}},\n  \"titulo\": \"TEST_LOCAL_Servicio_{{runId}}\",\n  \"descripcion\": \"Fixture de integración local\",\n  \"tarifaMinima\": 10,\n  \"zonasCoberturaIds\": [\n    {{zonaId}}\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+              "if (pm.response.code < 300) pm.environment.set('servicioId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Consultar servicio",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/servicios/{{servicioId}}"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Filtros servicios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/servicios?categoriaId={{categoriaId}}&page=0&size=20"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Crear solicitud",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/solicitudes",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"servicioId\": {{servicioId}},\n  \"clienteId\": {{clienteId}},\n  \"trabajadorId\": {{trabajadorId}},\n  \"fechaPropuesta\": \"{{fechaFutura}}\",\n  \"horaAproximada\": \"09:00:00\",\n  \"direccionServicio\": \"Dirección ficticia local\",\n  \"descripcionTrabajo\": \"Trabajo de integración\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo idSolicitud', () => pm.expect(pm.response.json()).to.have.property('idSolicitud'));",
+              "if (pm.response.code < 300) pm.environment.set('solicitudId', pm.response.json().idSolicitud);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Consultar solicitud",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/solicitudes/{{solicitudId}}"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Aceptar solicitud",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/aceptar"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('ACEPTADA',()=>pm.expect(pm.response.json().estado).to.eql('ACEPTADA'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Crear conversación",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/conversaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitudId\": {{solicitudId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+              "if (pm.response.code < 300) pm.environment.set('conversacionId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Enviar mensaje",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/mensajes",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversacionId\": {{conversacionId}},\n  \"contenido\": \"Mensaje local de integración\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+              "if (pm.response.code < 300) pm.environment.set('mensajeId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Consultar mensajes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/mensajes/conversacion/{{conversacionId}}"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Total no leído",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/mensajes/no-leidos/total"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo total', () => pm.expect(pm.response.json()).to.have.property('total'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Marcar leído",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/mensajes/{{mensajeId}}/leido"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Marcar leído idempotente",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/mensajes/{{mensajeId}}/leido"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Iniciar solicitud",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/iniciar"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Completar solicitud",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/solicitudes/{{solicitudId}}/completar"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('COMPLETADA',()=>pm.expect(pm.response.json().estado).to.eql('COMPLETADA'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Registrar reseña",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/resenas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitudId\": {{solicitudId}},\n  \"calificacion\": 5,\n  \"comentario\": \"Prueba local\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Reputación",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/reputaciones/trabajador/{{perfilTrabajadorId}}"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Resena incorporada',()=>pm.expect(pm.response.json().totalResenas).to.be.at.least(1));",
+              "pm.test('Servicio completado incorporado',()=>pm.expect(pm.response.json().serviciosCompletados).to.be.at.least(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Contratar promoción",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/promociones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"servicioId\": {{servicioId}},\n  \"planId\": {{planId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+              "if (pm.response.code < 300) pm.environment.set('promocionId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 Registrar transacción",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/transacciones-pago",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"promocionId\": {{promocionId}},\n  \"monto\": {{planPrecio}},\n  \"moneda\": \"USD\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+              "if (pm.response.code < 300) pm.environment.set('transaccionId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 Pago simulado",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/transacciones-pago/{{transaccionId}}/pago-simulado"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('APROBADA',()=>pm.expect(pm.response.json().estado).to.eql('APROBADA'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 Promoción activa",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{trabajadorToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/promociones/{{promocionId}}"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('ACTIVA',()=>pm.expect(pm.response.json().estado).to.eql('ACTIVA'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 Estadísticas admin",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/admin/estadisticas"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);",
+              "pm.test('Campo totalServicios', () => pm.expect(pm.response.json()).to.have.property('totalServicios'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 Cliente sin acceso administrativo",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{clienteToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/admin/estadisticas"
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+              "pm.test('Tiempo < 5 s', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+              "pm.test('JSON', () => pm.response.to.be.json);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

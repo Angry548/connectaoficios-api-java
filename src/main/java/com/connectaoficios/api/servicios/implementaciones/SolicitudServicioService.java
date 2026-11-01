@@ -755,6 +755,8 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                         : null
         );
 
+        respuesta.setMotivoRechazo(entidad.getMotivoRechazo());
+
         respuesta.setMotivoCancelacion(
                 entidad.getMotivoCancelacion()
         );

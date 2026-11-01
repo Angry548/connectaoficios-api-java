@@ -441,4 +441,9 @@ class TransaccionPagoServiceTest {
 
         return dto;
     }
+ @Test void pagoSimuladoApruebaYActiva(){when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion)); when(transaccionPagoRepository.save(any())).thenAnswer(i->i.getArgument(0)); var r=transaccionPagoService.procesarPagoSimulado(1L,TRABAJADOR_ID); assertEquals(EstadoTransaccion.APROBADA,r.getEstado()); assertTrue(r.getReferenciaExterna().startsWith("SIM-")); verify(promocionService).activar(1L);}
+ @Test void pagoSimuladoRechazaAjeno(){when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion)); assertThrows(ReglaNegocioException.class,()->transaccionPagoService.procesarPagoSimulado(1L,OTRO_TRABAJADOR_ID)); verifyNoInteractions(promocionService);}
+ @Test void pagoSimuladoRechazaEstadoInvalido(){transaccion.setEstado(EstadoTransaccion.APROBADA); when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion)); assertThrows(ReglaNegocioException.class,()->transaccionPagoService.procesarPagoSimulado(1L,TRABAJADOR_ID)); verifyNoInteractions(promocionService);}
+ @Test void pagoSimuladoRechazaPromocionNoPendiente(){promocion.setEstado(EstadoPromocion.CANCELADA); when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion)); assertThrows(ReglaNegocioException.class,()->transaccionPagoService.procesarPagoSimulado(1L,TRABAJADOR_ID)); verifyNoInteractions(promocionService);}
+
 }

@@ -60,39 +60,7 @@ public class ImagenController {
         );
     }
 
-    private Integer obtenerUsuarioId(
-            Jwt jwt
-    ) {
-
-        if (jwt == null
-                || jwt.getSubject() == null
-                || jwt.getSubject().isBlank()) {
-
-            throw new ReglaNegocioException(
-                    "No se pudo identificar al usuario autenticado"
-            );
-        }
-
-        try {
-
-            Integer usuarioId =
-                    Integer.valueOf(
-                            jwt.getSubject()
-                    );
-
-            if (usuarioId <= 0) {
-                throw new ReglaNegocioException(
-                        "El identificador del usuario autenticado no es válido"
-                );
-            }
-
-            return usuarioId;
-
-        } catch (NumberFormatException exception) {
-
-            throw new ReglaNegocioException(
-                    "El identificador del usuario autenticado no es válido"
-            );
-        }
+    private Integer obtenerUsuarioId(Jwt jwt) {
+        return com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
     }
 }

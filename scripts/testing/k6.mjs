@@ -1,0 +1,11 @@
+import {spawnSync} from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+const mode=process.argv[2]||'load';const module=process.argv[3]||'servicios';
+if(!['load','stress'].includes(mode)||!['servicios','solicitudes','mensajeria','promociones','reportes-estadisticas'].includes(module))throw new Error('Modo/módulo inválido');
+if(mode==='stress'&&process.env.K6_ALLOW_STRESS!=='true')throw new Error('Requiere K6_ALLOW_STRESS=true en la fase posterior');
+const out=path.resolve('reports/k6/'+mode);fs.mkdirSync(out,{recursive:true});
+const args=['run','--rm','--network','container:connectaoficios-java-api','--user',typeof process.getuid==='function'?process.getuid()+':'+process.getgid():'0','-v',path.resolve('tests/k6')+':/scripts:ro','-v',out+':/reports','-e','BASE_URL=http://127.0.0.1:8080','-e','K6_DOCKER=true'];
+for(const key of ['CLIENTE_TOKEN','TRABAJADOR_TOKEN','ADMIN_TOKEN','CLIENTE_ID','SERVICIO_ID','CONVERSACION_ID','WRITE'])if(process.env[key])args.push('-e',key);
+args.push('grafana/k6:1.0.0','run','--summary-export','/reports/'+module+'.json','/scripts/'+mode+'/'+module+'.js');
+const r=spawnSync('docker',args,{stdio:'inherit'});if(r.error)throw r.error;process.exitCode=r.status??1;

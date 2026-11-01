@@ -11,6 +11,16 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig
         implements WebSocketMessageBrokerConfigurer {
 
+    private final com.connectaoficios.api.seguridad.StompSeguridad seguridad;
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins}")
+    private String origins;
+    public WebSocketConfig(com.connectaoficios.api.seguridad.StompSeguridad seguridad) { this.seguridad = seguridad; }
+
+    @Override
+    public void configureClientInboundChannel(org.springframework.messaging.simp.config.ChannelRegistration registration) {
+        registration.interceptors(seguridad);
+    }
+
     @Override
     public void configureMessageBroker(
             MessageBrokerRegistry registry
@@ -32,6 +42,6 @@ public class WebSocketConfig
     ) {
 
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOrigins(origins.split(","));
     }
 }

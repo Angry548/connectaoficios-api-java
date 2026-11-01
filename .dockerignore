@@ -22,3 +22,7 @@ docs/
 build/
 
 README.md
+
+reports/
+tests/
+!src/main/resources/application-local.properties

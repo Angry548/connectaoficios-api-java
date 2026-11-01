@@ -62,6 +62,10 @@ class SolicitudServicioServiceTest {
 
         servicio = new Servicio();
         servicio.setId(1L);
+        var perfil = new com.connectaoficios.api.modelos.PerfilTrabajador();
+        perfil.setId(1L);
+        perfil.setTrabajadorId(200);
+        servicio.setPerfilTrabajador(perfil);
         servicio.setTitulo(
                 "Servicio de fontanería residencial"
         );
@@ -559,8 +563,8 @@ class SolicitudServicioServiceTest {
         verify(
                 reputacionTrabajadorService,
                 times(1)
-        ).registrarServicioCompletado(
-                200L
+        ).recalcular(
+                1L
         );
 
         ArgumentCaptor<NotificacionGuardar> captor =
@@ -802,7 +806,7 @@ class SolicitudServicioServiceTest {
         verify(
                 reputacionTrabajadorService,
                 never()
-        ).registrarServicioCompletado(
+        ).recalcular(
                 anyLong()
         );
 

@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 
+@org.springframework.context.annotation.Profile("!local & !test")
 @Service
 public class ImagenService implements IImagenService {
 
@@ -85,27 +86,10 @@ public class ImagenService implements IImagenService {
 
         } catch (IOException exception) {
 
-            String detalle =
-                    exception.getMessage() != null
-                            ? exception.getMessage()
-                            : "Error desconocido de Cloudinary";
-
-            throw new ReglaNegocioException(
-                    "No se pudo subir la fotografía a Cloudinary: "
-                            + detalle
-            );
+            throw new ReglaNegocioException("No se pudo subir la fotografía al proveedor");
 
         } catch (RuntimeException exception) {
-
-            String detalle =
-                    exception.getMessage() != null
-                            ? exception.getMessage()
-                            : exception.getClass().getSimpleName();
-
-            throw new ReglaNegocioException(
-                    "No se pudo procesar la fotografía: "
-                            + detalle
-            );
+            throw new ReglaNegocioException("No se pudo procesar la fotografía");
         }
     }
 

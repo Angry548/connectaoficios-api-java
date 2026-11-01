@@ -32,7 +32,7 @@ public class ServicioController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.perfil(authentication, #servicioGuardar.perfilTrabajadorId)")
     public ResponseEntity<ServicioSalida> publicar(
             @Valid @RequestBody ServicioGuardar servicioGuardar
     ) {
@@ -183,7 +183,7 @@ public class ServicioController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.servicio(authentication, #id)")
     public ResponseEntity<ServicioSalida> modificar(
             @PathVariable Long id,
             @Valid @RequestBody ServicioModificar servicioModificar
@@ -199,7 +199,7 @@ public class ServicioController {
     }
 
     @PutMapping("/{id}/estado")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.servicio(authentication, #id)")
     public ResponseEntity<ServicioSalida> cambiarEstado(
             @PathVariable Long id,
             @Valid @RequestBody ServicioCambiarEstado servicioCambiarEstado
@@ -215,7 +215,7 @@ public class ServicioController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.servicio(authentication, #id)")
     public ResponseEntity<Void> eliminar(
             @PathVariable Long id
     ) {

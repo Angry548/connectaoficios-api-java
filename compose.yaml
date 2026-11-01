@@ -42,14 +42,30 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:?Define JWT_ISSUER en .env}
       JWT_AUDIENCE: ${JWT_AUDIENCE:?Define JWT_AUDIENCE en .env}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Define CORS_ALLOWED_ORIGINS en .env}
-      CLOUDINARY_URL: ${CLOUDINARY_URL:?Define CLOUDINARY_URL en .env}
-      # Solo Docker local: application.properties conserva ddl-auto=none.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      LOGGING_LEVEL_ORG_HIBERNATE_TOOL_SCHEMA: DEBUG
+      SPRING_PROFILES_ACTIVE: local
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
     networks:
       - local
 
+  unit-tests:
+    image: maven:3.9.16-eclipse-temurin-21
+    profiles: [testing]
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - maven-testing-cache:/root/.m2
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+    command: ["sh", "-c", "sh ./mvnw -B clean verify && sh ./mvnw -B site"]
+    network_mode: bridge
+
 volumes:
+  maven-testing-cache:
   connectaoficios-mysql-data:
     name: connectaoficios-mysql-data
 

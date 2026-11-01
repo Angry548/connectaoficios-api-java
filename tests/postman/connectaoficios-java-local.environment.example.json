@@ -1,0 +1,108 @@
+{
+  "name": "ConnectaOficios Java - LOCAL",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "clienteToken",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "trabajadorToken",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "trabajadorId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "perfilTrabajadorId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "categoriaId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "zonaId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "planId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "planPrecio",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "servicioId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "solicitudId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "conversacionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "mensajeId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "promocionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "transaccionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

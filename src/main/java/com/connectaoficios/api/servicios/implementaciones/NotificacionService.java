@@ -219,7 +219,7 @@ public class NotificacionService implements INotificacionService {
                 notificacionRepository
                         .findById(id)
                         .orElseThrow(
-                                () -> new RuntimeException(
+                                () -> new com.connectaoficios.api.excepciones.RecursoNoEncontradoException(
                                         "La notificación no existe."
                                 )
                         );
@@ -227,7 +227,7 @@ public class NotificacionService implements INotificacionService {
         if (!notificacion
                 .getUsuarioDestinoId()
                 .equals(usuarioId)) {
-            throw new RuntimeException(
+            throw new org.springframework.security.access.AccessDeniedException(
                     "No tienes permiso para acceder a esta notificación."
             );
         }

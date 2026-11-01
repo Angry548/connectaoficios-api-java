@@ -1,0 +1,22 @@
+{
+  "target": "http://api-local:8080",
+  "includeRegex": "http://api-local:8080/.*",
+  "roles": [
+    {
+      "name": "publico",
+      "tokenEnv": null
+    },
+    {
+      "name": "cliente",
+      "tokenEnv": "CLIENTE_TOKEN"
+    },
+    {
+      "name": "trabajador",
+      "tokenEnv": "TRABAJADOR_TOKEN"
+    },
+    {
+      "name": "administrador",
+      "tokenEnv": "ADMIN_TOKEN"
+    }
+  ]
+}

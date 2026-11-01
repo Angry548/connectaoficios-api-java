@@ -52,17 +52,6 @@ public class PerfilClienteController {
     }
 
     private Integer obtenerClienteId(Jwt jwt) {
-        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
-            throw new ReglaNegocioException("No se pudo identificar al usuario autenticado");
-        }
-        try {
-            int clienteId = Integer.parseInt(jwt.getSubject());
-            if (clienteId > 0) {
-                return clienteId;
-            }
-        } catch (NumberFormatException exception) {
-            throw new ReglaNegocioException("El identificador del usuario autenticado no es válido");
-        }
-        throw new ReglaNegocioException("El identificador del usuario autenticado no es válido");
+        return com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
     }
 }

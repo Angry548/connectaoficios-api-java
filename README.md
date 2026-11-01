@@ -1,159 +1,284 @@
-# ConnectaOficios API Java
+# ConnectaOficios Backend Java
 
-Backend Spring Boot 4.0.8 con Java 21.
+API Spring Boot 4.0.8 / Java 21 para categorías, servicios, perfiles, disponibilidad, zonas, solicitudes, conversaciones, mensajes, reseñas, reputación, promociones, transacciones, notificaciones, reportes y estadísticas.
 
-## Pruebas y cobertura
+La API .NET administra principalmente autenticación, login, usuarios y emisión de JWT. Java valida esos tokens para sus endpoints protegidos. El entorno oficial de pruebas es **Docker local: Java + MySQL 8.4**, con perfil Spring `local` e imágenes simuladas sin Cloudinary real.
 
-Surefire muestra el resultado de las pruebas (casos, errores, fallos, omitidas
-y tiempos). JaCoCo muestra cuanto codigo fue ejecutado por las pruebas,
-incluyendo instrucciones, ramas, lineas, metodos y clases. No hay umbral minimo
-de cobertura ni exclusiones de clases.
+## 1. Requisitos y apertura
 
-Desde PowerShell, ejecutar en este orden para conservar ambos reportes:
+| Flujo | Requisitos |
+|---|---|
+| Recomendado | Git, Docker con contenedores Linux y Docker Compose v2 |
+| Tests sin Docker | Java 21 y Maven Wrapper incluido; no instalar Maven global |
+| Herramientas opcionales | Node.js para Newman y wrappers, navegador; k6 instalado solo si se ejecuta directamente sin su wrapper Docker |
 
-```powershell
-# Pruebas
-.\mvnw.cmd clean test
-# Pruebas y cobertura JaCoCo
-.\mvnw.cmd clean verify
-# Reporte HTML Surefire a partir de los XML existentes, sin repetir pruebas
-.\mvnw.cmd site
-# Abrir reportes
-Start-Process .\target\site\surefire-report.html
-Start-Process .\target\site\jacoco\index.html
+Clonar usando la URL que proporciona GitHub en **Code**; sustituir `<URL>`:
+
+```bash
+git clone <URL>
+cd connectaoficios-api-java
 ```
 
-`clean` elimina `target`, incluido cualquier reporte anterior; por eso se
-ejecuta `site` despues del ultimo `clean verify`. Los XML originales quedan
-en `target/surefire-reports` y los HTML en `target/site`. Son artefactos
-locales ignorados por Git. Las pruebas de contexto usan H2 en memoria,
-segun `src/test/resources/application.properties`.
+En Codespaces, abrir el Codespace sobre la rama asignada y trabajar desde la raíz del repositorio. Su flujo es Bash/Linux; ver [GitHub Codespaces](#github-codespaces).
 
-Si hay pruebas fallidas, Maven conserva los XML y los datos `target/jacoco.exec`,
-pero detiene el ciclo antes de `verify`. Para inspeccionar la cobertura de esa
-ejecucion sin ocultar fallos ni repetir pruebas:
+## 2. Variables de entorno
+
+Crear `.env` **solo si todavía no existe**:
 
 ```powershell
-.\mvnw.cmd jacoco:report
-.\mvnw.cmd site
-```
-
-Esto genera evidencia del codigo ejecutado; no convierte el build fallido en
-un build aprobado.
-
-## Docker local
-
-El Dockerfile existente compila con `maven:3.9-eclipse-temurin-21` y ejecuta
-el JAR con `eclipse-temurin:21-jre`. El build usa `-DskipTests`: no ejecuta
-pruebas ni genera reportes de calidad. Los reportes locales no se sirven en Docker.
-
-Requisitos: Docker Desktop iniciado con contenedores Linux y Docker Compose v2.
-Desde PowerShell en la raiz del proyecto:
-
-```powershell
+# Windows PowerShell
 Copy-Item .env.example .env
 ```
 
-Completar `.env` con contrasenas locales y una clave JWT aleatoria de al menos
-32 bytes para HS256. `.env` esta ignorado por Git y por Docker.
-No copiar credenciales de Aiven, Render ni produccion.
+```bash
+# Bash / Codespaces
+cp .env.example .env
+```
 
-`JWT_ISSUER` y `JWT_AUDIENCE` deben coincidir exactamente con el emisor JWT
-local que genera los tokens. La configuracion principal los recibe mediante
-variables y no define valores predeterminados. Los unicos valores literales
-del repositorio (`connectaoficios-test` para ambos) pertenecen a las pruebas;
-no se han asumido como valores del emisor de desarrollo.
+`.env` está ignorado por Git. La plantilla contiene valores públicos exclusivamente locales: no introducir secretos reales ni credenciales de producción. No sobrescribir un `.env` existente: las credenciales de un volumen MySQL ya inicializado no cambian al editar variables.
 
-`CLOUDINARY_URL` es obligatoria incluso si no se usan endpoints de imagen:
-`CloudinaryConfig` crea el bean al iniciar y exige el prefijo `cloudinary://`.
-El formato de la biblioteca es `cloudinary://API_KEY:API_SECRET@CLOUD_NAME`.
-Para usar imagenes, proporcionar una cuenta de desarrollo. Una URL vacia o
-`CAMBIAR_SI_ES_NECESARIO` no cumple la configuracion actual. La construccion
-del bean no hace una subida; no se han probado credenciales ficticias ni se
-ha validado el arranque del contenedor. No se desactiva ni modifica ese bean.
+## 3. Docker: construir y levantar
 
-Validar y construir antes de iniciar:
+Los mismos comandos funcionan en PowerShell y Bash:
 
-```powershell
+```bash
 docker compose config --quiet
-docker compose build
-```
-
-Solo si ambos comandos terminan correctamente:
-
-```powershell
-docker compose up -d
+docker compose up -d --build
 docker compose ps
-docker compose logs --tail=150
-docker images
 ```
 
-La imagen propia se llama `connectaoficios-java-api:local`. MySQL utiliza
-`mysql:8.4`, descargada al iniciar si todavia no existe localmente; el build
-de la API no descarga automaticamente la imagen de MySQL.
+Esperar a que `connectaoficios-java-api` y `mysql` aparezcan **healthy**. La imagen propia es `connectaoficios-java-api:local`.
 
-### Puertos y red
+| Recurso | URL |
+|---|---|
+| Base de la API | http://localhost:8081 |
+| Health local | http://localhost:8081/api/health |
+| OpenAPI | http://localhost:8081/v3/api-docs |
+| Swagger UI | http://localhost:8081/swagger-ui/index.html |
 
-- API: `http://localhost:8081`, enlazada solo a `127.0.0.1`; puerto interno 8080.
-- MySQL: `127.0.0.1:3307`, porque 3306 estaba ocupado al preparar el proyecto.
-  Puede cambiarse mediante `MYSQL_HOST_PORT` si el puerto elegido esta ocupado.
-- JDBC interno: `jdbc:mysql://mysql:3306/ConnectaOficios?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`.
-- Red bridge de Compose: `connectaoficios-local-network`.
-- Contenedores: `connectaoficios-mysql` y `connectaoficios-java-api`.
+El health comprueba MySQL con `SELECT 1`. La raíz `/` no es un endpoint de health; usar `/api/health`.
 
-La API siempre usa `mysql:3306`, independientemente del puerto publicado en
-Windows. Compose no recibe un `DB_URL` externo: construye la URL con el servicio
-local `mysql`. Los servicios se comunican por la red de Compose.
+**MySQL:** desde el host, `localhost:3307` por defecto (`MYSQL_HOST_PORT`); dentro de Docker, `mysql:3306`. Base, usuario y contraseña se toman de `.env`. Se conserva el volumen `connectaoficios-mysql-data`; Hibernate crea/actualiza el esquema solo en el perfil local.
 
-### Esquema y persistencia
+Para datos independientes de usuarios, consultar el [seed opcional y los fixtures](docs/testing/README.md#esquema-volumen-y-seed). Las cuentas principales no se crean desde SQL Java.
 
-En el primer inicio, la imagen oficial MySQL crea `MYSQL_DATABASE` y el usuario
-configurado sobre el volumen vacio `connectaoficios-mysql-data`, montado en
-`/var/lib/mysql`. El healthcheck usa `mysqladmin ping`; la API depende de MySQL
-healthy. No se agrega Actuator ni un endpoint de health a la API.
+### Detener y reanudar
 
-Exclusivamente Compose proporciona `SPRING_JPA_HIBERNATE_DDL_AUTO=update`:
-Hibernate usa las entidades existentes para crear las tablas faltantes.
-`src/main/resources/application.properties` conserva
-`spring.jpa.hibernate.ddl-auto=none`. No hay migraciones ni scripts nuevos.
-La creacion de tablas no incluye datos iniciales ni usuarios/tokens externos.
-
-Compose habilita DEBUG para `org.hibernate.tool.schema` a fin de inspeccionar
-el proceso de esquema. Revisar los logs del primer arranque y comprobar que
-no existan errores DDL; el resultado aun requiere validacion en Docker.
-Para comprobar tablas sin exponer la contrasena en la linea de comandos:
-
-```powershell
-docker compose exec mysql mysql -u connectaoficios -p ConnectaOficios -e "SHOW TABLES;"
-```
-
-Introducir la contrasena local cuando se solicite. Adaptar usuario/base si se
-cambiaron en `.env`. En un volumen ya inicializado, cambiar las variables de
-MySQL no recrea la base ni cambia automaticamente sus credenciales.
-
-```powershell
-docker compose logs -f connectaoficios-java-api
-docker compose logs -f mysql
+```bash
 docker compose stop
 docker compose start
-docker compose down
 ```
 
-Tanto `stop`/`start` como `down` seguido de `up -d` conservan los datos.
-**`docker compose down -v` elimina el volumen y los datos MySQL locales.**
-No ejecutarlo para detener o reiniciar el entorno.
+> **ADVERTENCIA: NO ejecutar normalmente `docker compose down -v`. Elimina el volumen MySQL local y sus datos.** Para detener el entorno, usar `stop`.
 
-### Swagger
+## 4. Pruebas unitarias por módulo
 
-Springdoc no tiene rutas personalizadas y SecurityConfig permite
-`/swagger-ui/**`, `/swagger-ui.html` y `/v3/api-docs/**`.
-Tras iniciar correctamente, comprobar:
+JUnit 5 / Mockito; clases en `src/test/java/com/connectaoficios/api/servicios/implementaciones/`, por ejemplo:
+
+```text
+CategoriaServiceTest
+ServicioServiceTest
+SolicitudServicioServiceTest
+MensajeServiceTest
+ResenaServiceTest
+ReputacionTrabajadorServiceTest
+```
+
+Los tests unitarios y de Spring/H2 no requieren levantar MySQL Docker. Los tests API/integración contra MySQL sí lo requieren.
+
+| Selección | Windows PowerShell | Bash / Codespaces |
+|---|---|---|
+| Suite completa | `.\mvnw.cmd test` | `./mvnw test` |
+| Una clase | `.\mvnw.cmd -Dtest=ServicioServiceTest test` | `./mvnw -Dtest=ServicioServiceTest test` |
+| Un método | `.\mvnw.cmd '-Dtest=ServicioServiceTest#nombreMetodo' test` | `./mvnw '-Dtest=ServicioServiceTest#nombreMetodo' test` |
+
+Sustituir `nombreMetodo` por uno existente, por ejemplo `publicar_debeCrearServicioActivo`. Conservar las comillas del selector de método.
+
+### Unit tests mediante Docker
+
+Suite completa y reportes, sin Maven/Java del host:
+
+```bash
+docker compose --profile testing run --rm unit-tests
+```
+
+Ese comando corresponde al líder porque ejecuta `clean verify` y `site`. Para que un integrante ejecute **solo su clase**, reemplazar el comando del servicio:
+
+```bash
+docker compose --profile testing run --rm unit-tests sh ./mvnw -B -Dtest=ServicioServiceTest test
+```
+
+`testing` es el perfil de Compose; el runner activa el perfil Spring `test`, usa H2 y no elimina el volumen MySQL. No ejecutar dos procesos Maven simultáneos sobre el mismo `target`.
+
+## 5. Asignaciones del equipo
+
+| Integrante | Clase funcional |
+|---|---|
+| Eduardo | `ServicioServiceTest` |
+| Alfredo | `SolicitudServicioServiceTest` |
+| Óscar | `MensajeServiceTest` |
+| Nuria | `ResenaServiceTest` y `ReputacionTrabajadorServiceTest` |
+
+Consultar [TEAM_ASSIGNMENTS.md](docs/testing/TEAM_ASSIGNMENTS.md) antes de escribir casos: seis de los ocho propuestos ya existen y dos están parcialmente cubiertos. Acordar reemplazos o ampliaciones; no duplicarlos. **No crear archivos con nombres de integrantes.**
+
+## Flujo para integrante
+
+Este flujo corresponde a la fase futura del equipo, después de que el líder distribuya la base común:
+
+1. Estar en su rama asignada; comprobarla con `git branch --show-current`. No trabajar sus casos sobre `master` o `develop`.
+2. Actualizar esa rama con `git pull --ff-only`. Si falla o hay conflictos, consultar al líder.
+3. Levantar Docker si la prueba lo requiere.
+4. Editar únicamente el archivo funcional de pruebas acordado y añadir/ampliar los casos aprobados.
+5. Ejecutar su clase o método usando los comandos anteriores.
+6. Confirmar **PASS / BUILD SUCCESS**, sin failures/errors.
+7. Revisar `git status`, `git diff` y `git diff --check`.
+8. Agregar únicamente las rutas fuente de pruebas necesarias; evitar `git add .`.
+9. Hacer commit de sus pruebas y, si corresponde, scripts específicos de su caso.
+10. Hacer push únicamente a su rama asignada.
+
+**No generar ni subir reportes finales.** `test` puede crear automáticamente XML Surefire y `jacoco.exec` bajo `target`; son artefactos locales ignorados, no entregables individuales.
+
+### Qué no modificar ni subir
+
+Normalmente no modificar `pom.xml`, `Dockerfile`, `compose.yaml`, `.env.example`, Surefire, JaCoCo ni la configuración global de k6/ZAP. Tampoco reconfigurar Postman/Newman para una asignación unitaria. Si hace falta un cambio general, avisar al líder.
+
+**No versionar:** `.env`, `target/`, `node_modules/`, `jacoco.exec`, tokens, credenciales, reportes temporales ni environments personales de Postman. Mantener las plantillas y el código fuente de pruebas.
+
+## 6. Reportes finales: responsabilidad del líder
+
+Después de integrar los cambios, ejecutar en orden; continuar con `site` solo si `clean verify` pasa:
 
 ```powershell
-Invoke-WebRequest http://localhost:8081/swagger-ui/index.html
-Invoke-RestMethod http://localhost:8081/v3/api-docs
+.\mvnw.cmd clean verify
+.\mvnw.cmd site
 ```
 
-Rutas esperadas: `http://localhost:8081/swagger-ui/index.html` y
-`http://localhost:8081/v3/api-docs`. Pendientes de comprobacion HTTP con los
-contenedores en marcha.
+```bash
+./mvnw clean verify
+./mvnw site
+```
+
+El runner Docker `unit-tests` es el equivalente completo. `clean` elimina las evidencias anteriores en `target`.
+
+| Reporte | Archivo | Contenido |
+|---|---|---|
+| Surefire | `target/site/surefire-report.html` | Tests, failures, errors, skipped y success rate |
+| JaCoCo | `target/site/jacoco/index.html` | Cobertura de líneas, ramas, métodos y clases |
+
+La ejecución de referencia del **31/10/2026** reportó **264 tests, 264 passed, 0 failures, 0 errors y 0 skipped**. No es una garantía para cambios posteriores; volver a medir después de integrar. No se fija aquí una cobertura histórica como objetivo garantizado.
+
+Abrir los HTML en navegador. Para evidencia PDF manual: **Ctrl + P → Guardar como PDF**. Lo realiza el líder durante la consolidación; no se automatiza.
+
+El líder consolida: suite completa → Surefire/JaCoCo → Newman → ZAP → k6 Load → k6 Stress → PDF/evidencias. Las campañas de seguridad/rendimiento se ejecutan en su fase acordada, exclusivamente local. Los runners actuales de Newman/k6 producen JSON/JUnit o JSON según la herramienta; no todos generan HTML.
+
+## 7. Postman / Newman, k6 y ZAP
+
+Estas herramientas corresponden al líder o al responsable de la campaña, no al flujo unitario cotidiano.
+
+### Postman / Newman
+
+En [`tests/postman/`](tests/postman/):
+
+- Colección: `connectaoficios-java-local.collection.json`.
+- Plantilla: `connectaoficios-java-local.environment.example.json`.
+
+Importarlas en Postman o copiar la plantilla como `tests/postman/local.environment.json` (ignorado). Base: **`http://localhost:8081`**. Completar tokens/IDs obtenidos de .NET local, aplicar el seed y preparar el perfil trabajador según la [guía de integración](docs/testing/README.md#postman--newman). Las plantillas no contienen tokens; no subir el environment personal.
+
+```powershell
+.\scripts\testing\newman.ps1
+```
+
+```bash
+sh scripts/testing/newman.sh
+```
+
+Los scripts existentes usan Node.js / `npx newman`, validan el destino local y escriben en `reports/newman/`.
+
+### k6
+
+[`tests/k6/load/`](tests/k6/load/) mide carga prevista; [`tests/k6/stress/`](tests/k6/stress/) incrementa carga para observar degradación. Ambos incluyen Servicios, Solicitudes, Mensajería, Promociones y Reportes/Estadísticas.
+
+Wrapper existente, con Docker y Node.js:
+
+```bash
+node scripts/testing/k6.mjs load servicios
+# Solo durante la fase de stress acordada:
+node scripts/testing/k6.mjs stress servicios
+```
+
+Stress requiere habilitar `K6_ALLOW_STRESS=true` en la sesión: Bash `export K6_ALLOW_STRESS=true`; PowerShell `$env:K6_ALLOW_STRESS='true'`. Los tokens van por variables de entorno, sin login .NET bajo carga. Módulos, IDs requeridos, thresholds y resultados: [tests/k6/README.md](tests/k6/README.md).
+
+### OWASP ZAP
+
+Configuración y procedimiento: [`tests/zap/`](tests/zap/). Usar el runner existente:
+
+```bash
+node scripts/testing/zap.mjs baseline publico
+```
+
+Solo contra Docker local; **no apuntar a Render, Aiven ni producción**. El runner fija el destino y utiliza una red Docker interna. El escaneo activo requiere habilitación explícita y se reserva para la campaña de seguridad. Instrucciones por rol y reportes HTML: [tests/zap/README.md](tests/zap/README.md).
+
+## Usuarios de prueba
+
+**Java no administra login ni usuarios principales.** Estas direcciones son ejemplos de formato, no cuentas ya creadas:
+
+| Rol .NET | Correo de ejemplo          | Contraseña |
+|---|----------------------------|-----------|
+| Cliente | `cliente123@gmail.com`     | clave1234 |
+| Trabajador | `trabajador123@gmail.com`  | clave123  |
+| Administrador | `admin123@gmail.com`       |clave123  
+| AdministradorPrincipal | `adminprincipal@gmail.com` |clave123  
+
+Los usuarios y contraseñas definitivos se definirán en la API .NET local. Los JWT para Java se obtienen desde .NET; no incluir contraseñas reales ni tokens en el repositorio. Ver [TEST_USERS.example.md](docs/testing/TEST_USERS.example.md), que también contiene ejemplos ficticios y el contrato de claims.
+
+```text
+.NET → login → JWT → Java → endpoints protegidos
+```
+
+Java valida firma, identidad, rol, issuer, audience y expiración. El emisor .NET local debe coincidir con la configuración JWT de Java para Postman e integración.
+
+## GitHub Codespaces
+
+Abrir el Codespace en su rama asignada. Desde raíz, usando Bash y sin sobrescribir un `.env` existente:
+
+```bash
+cp .env.example .env
+docker compose config --quiet
+docker compose up -d --build
+docker compose ps
+```
+
+Después, con Java 21 disponible, sustituir `<Clase>` por su clase funcional:
+
+```bash
+./mvnw -Dtest=<Clase> test
+```
+
+O usar Docker, sin Maven/Java del Codespace:
+
+```bash
+# Integrante: solo su clase
+docker compose --profile testing run --rm unit-tests sh ./mvnw -B -Dtest=ServicioServiceTest test
+# Líder: suite y reportes
+docker compose --profile testing run --rm unit-tests
+```
+
+Los comandos acceden a `localhost` dentro del Codespace; para abrir Swagger en navegador, usar el puerto **8081** reenviado en la pestaña **Ports**, manteniéndolo privado. Si Docker/Compose no están disponibles en la imagen del Codespace, informar al líder antes de instalar configuraciones adicionales. No se requiere un `.devcontainer` nuevo para seguir esta guía.
+
+## Solución de problemas
+
+| Problema | Acción |
+|---|---|
+| Maven Central: `Remote host terminated the handshake` durante build | Suele ser conectividad temporal: reintentar `docker compose up -d --build`. Si persiste, revisar red/proxy/certificados con el líder; no cambiar dependencias inmediatamente ni desactivar TLS. |
+| Puerto 8081 o 3307 ocupado | Revisar `docker compose ps` y `docker ps --format "table {{.Names}}\t{{.Ports}}"`. Si no es otro contenedor, PowerShell: `Get-NetTCPConnection -LocalPort 8081,3307`; Linux: `ss -ltn`. No cambiar puertos permanentemente sin informar al líder. |
+| API en `health: starting` | Esperar y ejecutar `docker compose ps` y `docker compose logs --tail=100 connectaoficios-java-api`. Revisar también `docker compose logs --tail=100 mysql`. No borrar el volumen para resolver el arranque. |
+| `./mvnw`: permiso denegado en Linux | Ejecutar `chmod +x mvnw` o invocar `sh ./mvnw`. |
+
+## Documentación de referencia
+
+- [Guía detallada del entorno y testing](docs/testing/README.md).
+- [Asignaciones, duplicados y comandos individuales](docs/testing/TEAM_ASSIGNMENTS.md).
+- [Usuarios ficticios y contrato JWT](docs/testing/TEST_USERS.example.md).
+- [Informe de preparación y evidencias de referencia](docs/testing/PREPARATION_REPORT.md): histórico, no sustituye una validación nueva.
+- [Casos recomendados para Xray](docs/testing/XRAY_CASES.md).
+- [k6](tests/k6/README.md) y [ZAP](tests/zap/README.md).

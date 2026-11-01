@@ -24,8 +24,6 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/reportes")
 public class ReporteController {
 
-    private static final String CLAIM_NAME_IDENTIFIER =
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 
     private final IReporteService reporteService;
 
@@ -285,39 +283,7 @@ public class ReporteController {
         );
     }
 
-    private Integer obtenerIdDeUsuario(
-            Jwt jwt
-    ) {
-
-        if (jwt == null) {
-            throw new ReglaNegocioException(
-                    "No se pudo identificar al usuario autenticado"
-            );
-        }
-
-        String id =
-                jwt.getClaimAsString(
-                        CLAIM_NAME_IDENTIFIER
-                );
-
-        if (id == null || id.isBlank()) {
-            id = jwt.getSubject();
-        }
-
-        if (id == null || id.isBlank()) {
-            throw new ReglaNegocioException(
-                    "No se pudo identificar al usuario autenticado"
-            );
-        }
-
-        try {
-            return Integer.valueOf(
-                    id
-            );
-        } catch (NumberFormatException exception) {
-            throw new ReglaNegocioException(
-                    "El identificador del usuario autenticado no es válido"
-            );
-        }
+    private Integer obtenerIdDeUsuario(Jwt jwt) {
+        return com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
     }
 }

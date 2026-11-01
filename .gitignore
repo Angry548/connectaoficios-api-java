@@ -45,3 +45,16 @@ tools/
 ### Configuracion local ###
 application-local.properties
 application-secrets.properties
+# Testing: resultados y entornos con tokens
+reports/**
+!reports/**/
+!reports/**/.gitkeep
+tests/postman/*.environment.json
+!tests/postman/*.environment.example.json
+!src/main/resources/application-local.properties
+
+# Artefactos de pruebas fuera de target y dependencias locales
+jacoco.exec
+jacoco-it.exec
+surefire-reports/
+node_modules/

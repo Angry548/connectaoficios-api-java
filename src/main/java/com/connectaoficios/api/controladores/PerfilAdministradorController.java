@@ -52,17 +52,6 @@ public class PerfilAdministradorController {
     }
 
     private Integer obtenerAdministradorId(Jwt jwt) {
-        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
-            throw new ReglaNegocioException("No se pudo identificar al usuario autenticado");
-        }
-        try {
-            int administradorId = Integer.parseInt(jwt.getSubject());
-            if (administradorId > 0) {
-                return administradorId;
-            }
-        } catch (NumberFormatException exception) {
-            throw new ReglaNegocioException("El identificador del usuario autenticado no es válido");
-        }
-        throw new ReglaNegocioException("El identificador del usuario autenticado no es válido");
+        return com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
     }
 }

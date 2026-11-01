@@ -37,9 +37,7 @@ public class PerfilTrabajadorController {
     ) {
 
         Integer trabajadorId =
-                Integer.valueOf(
-                        jwt.getSubject()
-                );
+                com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -138,9 +136,7 @@ public class PerfilTrabajadorController {
     ) {
 
         Integer trabajadorId =
-                Integer.valueOf(
-                        jwt.getSubject()
-                );
+                com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
 
         return ResponseEntity.ok(
                 perfilService.modificar(

@@ -17,10 +17,8 @@ public class SolicitudServicioGuardar {
     @NotNull(message = "El ID del servicio es obligatorio")
     private Long servicioId;
 
-    @NotNull(message = "El ID del cliente es obligatorio")
     private Integer clienteId;
 
-    @NotNull(message = "El ID del trabajador es obligatorio")
     private Integer trabajadorId;
 
     @NotNull(message = "La fecha propuesta es obligatoria")

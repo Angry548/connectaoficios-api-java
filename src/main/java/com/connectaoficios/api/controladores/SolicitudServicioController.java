@@ -22,18 +22,23 @@ import java.util.List;
 public class SolicitudServicioController {
 
     private final ISolicitudServicioService solicitudServicioService;
+    private final com.connectaoficios.api.seguridad.AccesoJava acceso;
 
     public SolicitudServicioController(
-            ISolicitudServicioService solicitudServicioService
+            ISolicitudServicioService solicitudServicioService,
+            com.connectaoficios.api.seguridad.AccesoJava acceso
     ) {
         this.solicitudServicioService = solicitudServicioService;
+        this.acceso = acceso;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<SolicitudServicioRespuesta> guardar(
-            @Valid @RequestBody SolicitudServicioGuardar solicitudGuardar
+            @Valid @RequestBody SolicitudServicioGuardar solicitudGuardar,
+            org.springframework.security.core.Authentication authentication
     ) {
+        acceso.prepararSolicitud(authentication, solicitudGuardar);
         SolicitudServicioRespuesta solicitud =
                 solicitudServicioService.guardar(
                         solicitudGuardar
@@ -91,7 +96,7 @@ public class SolicitudServicioController {
 
     @GetMapping("/cliente/{clienteId}")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+            "hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL') and @accesoJava.usuario(authentication, #clienteId)"
     )
     public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorCliente(
             @PathVariable Integer clienteId
@@ -105,7 +110,7 @@ public class SolicitudServicioController {
 
     @GetMapping("/cliente/{clienteId}/paginadas")
     @PreAuthorize(
-            "hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+            "hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL') and @accesoJava.usuario(authentication, #clienteId)"
     )
     public ResponseEntity<PaginaSalida<SolicitudServicioRespuesta>> obtenerPorClientePaginadas(
             @PathVariable Integer clienteId,
@@ -123,7 +128,7 @@ public class SolicitudServicioController {
 
     @GetMapping("/trabajador/{trabajadorId}")
     @PreAuthorize(
-            "hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+            "hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL') and @accesoJava.usuario(authentication, #trabajadorId)"
     )
     public ResponseEntity<List<SolicitudServicioRespuesta>> obtenerPorTrabajador(
             @PathVariable Integer trabajadorId
@@ -137,7 +142,7 @@ public class SolicitudServicioController {
 
     @GetMapping("/trabajador/{trabajadorId}/paginadas")
     @PreAuthorize(
-            "hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL')"
+            "hasAnyRole('TRABAJADOR', 'ADMINISTRADOR', 'ADMINISTRADORPRINCIPAL') and @accesoJava.usuario(authentication, #trabajadorId)"
     )
     public ResponseEntity<PaginaSalida<SolicitudServicioRespuesta>> obtenerPorTrabajadorPaginadas(
             @PathVariable Integer trabajadorId,
@@ -154,7 +159,7 @@ public class SolicitudServicioController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated() and @accesoJava.solicitud(authentication, #id, false)")
     public ResponseEntity<SolicitudServicioRespuesta> obtenerPorId(
             @PathVariable Long id
     ) {
@@ -166,7 +171,7 @@ public class SolicitudServicioController {
     }
 
     @PatchMapping("/{id}/aceptar")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.solicitud(authentication, #id, true)")
     public ResponseEntity<SolicitudServicioRespuesta> aceptar(
             @PathVariable Long id
     ) {
@@ -178,7 +183,7 @@ public class SolicitudServicioController {
     }
 
     @PatchMapping("/{id}/rechazar")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.solicitud(authentication, #id, true)")
     public ResponseEntity<SolicitudServicioRespuesta> rechazar(
             @PathVariable Long id,
             @Valid @RequestBody SolicitudServicioRechazar solicitudRechazar
@@ -192,7 +197,7 @@ public class SolicitudServicioController {
     }
 
     @PatchMapping("/{id}/iniciar")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.solicitud(authentication, #id, true)")
     public ResponseEntity<SolicitudServicioRespuesta> iniciar(
             @PathVariable Long id
     ) {
@@ -204,7 +209,7 @@ public class SolicitudServicioController {
     }
 
     @PatchMapping("/{id}/completar")
-    @PreAuthorize("hasRole('TRABAJADOR')")
+    @PreAuthorize("hasRole('TRABAJADOR') and @accesoJava.solicitud(authentication, #id, true)")
     public ResponseEntity<SolicitudServicioRespuesta> completar(
             @PathVariable Long id
     ) {
@@ -216,7 +221,7 @@ public class SolicitudServicioController {
     }
 
     @PatchMapping("/{id}/cancelar")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated() and @accesoJava.solicitud(authentication, #id, false)")
     public ResponseEntity<SolicitudServicioRespuesta> cancelar(
             @PathVariable Long id,
             @Valid @RequestBody SolicitudServicioCancelar solicitudCancelar

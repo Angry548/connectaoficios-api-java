@@ -25,8 +25,6 @@ import java.util.List;
 @RequestMapping("/api/promociones")
 public class PromocionController {
 
-    private static final String CLAIM_NAME_IDENTIFIER =
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 
     private final IPromocionService promocionService;
 
@@ -250,37 +248,7 @@ public class PromocionController {
         );
     }
 
-    private Integer obtenerIdDeUsuario(
-            Jwt jwt
-    ) {
-
-        if (jwt == null) {
-            throw new ReglaNegocioException(
-                    "No se pudo identificar al usuario autenticado"
-            );
-        }
-
-        String id =
-                jwt.getClaimAsString(
-                        CLAIM_NAME_IDENTIFIER
-                );
-
-        if (id == null || id.isBlank()) {
-            id = jwt.getSubject();
-        }
-
-        if (id == null || id.isBlank()) {
-            throw new ReglaNegocioException(
-                    "No se pudo identificar al usuario autenticado"
-            );
-        }
-
-        try {
-            return Integer.valueOf(id);
-        } catch (NumberFormatException exception) {
-            throw new ReglaNegocioException(
-                    "El identificador del usuario autenticado no es válido"
-            );
-        }
+    private Integer obtenerIdDeUsuario(Jwt jwt) {
+        return com.connectaoficios.api.seguridad.IdentidadJwt.usuarioId(jwt);
     }
 }

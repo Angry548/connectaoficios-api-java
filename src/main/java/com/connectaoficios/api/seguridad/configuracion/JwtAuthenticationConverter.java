@@ -33,7 +33,7 @@ public class JwtAuthenticationConverter
         if (role != null && !role.isBlank()) {
             authorities.add(
                     new SimpleGrantedAuthority(
-                            "ROLE_" + role.toUpperCase()
+                            "ROLE_" + (role.trim().equalsIgnoreCase("ADMINISTRADOR_PRINCIPAL") ? "ADMINISTRADORPRINCIPAL" : role.trim().toUpperCase(java.util.Locale.ROOT))
                     )
             );
         }
