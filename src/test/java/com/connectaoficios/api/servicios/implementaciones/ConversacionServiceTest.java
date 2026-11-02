@@ -25,6 +25,15 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ConversacionServiceTest {
 
+    @Test
+    void obtener_debeRechazarConversacionInexistente() {
+        // Angel Mate: no existe una consulta negativa equivalente en esta clase.
+        assertThrows(com.connectaoficios.api.excepciones.RecursoNoEncontradoException.class,
+                () -> conversacionService.obtenerPorId(99L, 10));
+        verifyNoInteractions(perfilClienteRepository, perfilTrabajadorRepository);
+        verify(conversacionRepository, never()).save(any());
+    }
+
     @Mock
     private IConversacionRepository conversacionRepository;
 

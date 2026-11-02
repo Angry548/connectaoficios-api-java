@@ -30,6 +30,28 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DisponibilidadServicioServiceTest {
 
+    // Casos adicionales de Angel Mate.
+    @Test
+    void obtenerPorId_debeConservarHorarioYServicio() {
+        when(disponibilidadRepository.findById(1L)).thenReturn(Optional.of(disponibilidad));
+        var salida = disponibilidadService.obtenerPorId(1L);
+        assertAll(() -> assertEquals(1L, salida.getServicioId()),
+                () -> assertEquals(DiaSemana.LUNES, salida.getDiaSemana()),
+                () -> assertEquals(LocalTime.of(9, 0), salida.getHoraInicio()),
+                () -> assertEquals(LocalTime.of(12, 0), salida.getHoraFin()));
+        verify(disponibilidadRepository, never()).save(any());
+    }
+
+    @Test
+    void modificar_debeRechazarHorarioInvertidoSinPersistir() {
+        when(disponibilidadRepository.findById(1L)).thenReturn(Optional.of(disponibilidad));
+        var dto = new DisponibilidadServicioModificar();
+        dto.setHoraFin(LocalTime.of(8, 0));
+        assertThrows(ReglaNegocioException.class, () -> disponibilidadService.modificar(1L, dto));
+        assertEquals(LocalTime.of(12, 0), disponibilidad.getHoraFin());
+        verify(disponibilidadRepository, never()).save(any());
+    }
+
     @Mock
     private IDisponibilidadServicioRepository disponibilidadRepository;
 

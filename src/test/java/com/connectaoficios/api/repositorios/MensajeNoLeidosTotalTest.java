@@ -21,6 +21,26 @@ class MensajeNoLeidosTotalTest {
     @Autowired EntityManager em;
     @Autowired IMensajeRepository repository;
 
+    @Test
+    void marcarRecibidoComoLeidoActualizaTotalGlobal() {
+        // Angel Mate: comprobar la transicion real con H2, sin modificar tests de Oscar.
+        var conversacion = conversacion(10, 20);
+        mensaje(conversacion, 20, false);
+        mensaje(conversacion, 20, false);
+        em.flush();
+        var recibido = repository.findByConversacionIdOrderByFechaEnvioAsc(conversacion.getId()).getFirst();
+        var conversaciones = mock(IConversacionRepository.class);
+        var chat = mock(IChatTiempoRealService.class);
+        var service = new MensajeService(repository, conversaciones, chat);
+        assertEquals(2, service.contarTotalNoLeidos(10));
+        service.marcarComoLeido(recibido.getId(), 10);
+        em.flush();
+        em.clear();
+        assertEquals(1, service.contarTotalNoLeidos(10));
+        org.junit.jupiter.api.Assertions.assertTrue(repository.findById(recibido.getId()).orElseThrow().getLeido());
+        verifyNoInteractions(conversaciones, chat);
+    }
+
     @Test void usuarioSinMensajes() { comprobar(10, 0); }
 
     @Test void unMensajeNoLeido() {

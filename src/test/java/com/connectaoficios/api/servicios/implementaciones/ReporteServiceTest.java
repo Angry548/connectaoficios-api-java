@@ -29,6 +29,41 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ReporteServiceTest {
 
+    @Test
+    void buscarConFiltros_debeRechazarPeriodoInvertidoSinConsultar() {
+        // Angel Mate: validacion del periodo antes de acceder a persistencia.
+        var filtro = new com.connectaoficios.api.dtos.reporte.ReporteFiltroDTO();
+        var desde = java.time.LocalDateTime.of(2026, 1, 2, 0, 0);
+        filtro.setFechaDesde(desde);
+        filtro.setFechaHasta(desde.minusDays(1));
+        assertThrows(ReglaNegocioException.class,
+                () -> reporteService.buscarConFiltros(filtro, 0, 20));
+        verifyNoInteractions(reporteRepository, servicioRepository);
+    }
+
+    @Test
+    void obtenerTodos_sinDatosDevuelveListaVacia() {
+        when(reporteRepository.findAll()).thenReturn(java.util.List.of());
+        assertTrue(reporteService.obtenerTodos().isEmpty());
+        verify(reporteRepository, never()).save(any());
+    }
+
+    @Test
+    void buscarConFiltros_normalizaTextoYConservaEstadoYTipo() {
+        var filtro = new com.connectaoficios.api.dtos.reporte.ReporteFiltroDTO();
+        filtro.setTexto("  denuncia  ");
+        filtro.setEstado(EstadoReporte.PENDIENTE);
+        filtro.setTipo(TipoReporte.USUARIO);
+        when(reporteRepository.buscarConFiltros(eq("denuncia"), eq(EstadoReporte.PENDIENTE),
+                eq(TipoReporte.USUARIO), isNull(), isNull(), isNull(), isNull(),
+                isNull(), isNull(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        var salida = reporteService.buscarConFiltros(filtro, 0, 20);
+        assertTrue(salida.getContenido().isEmpty());
+        verify(reporteRepository).buscarConFiltros(eq("denuncia"), eq(EstadoReporte.PENDIENTE),
+                eq(TipoReporte.USUARIO), isNull(), isNull(), isNull(), isNull(),
+                isNull(), isNull(), any());
+    }
+
     @Mock
     private IReporteRepository reporteRepository;
 

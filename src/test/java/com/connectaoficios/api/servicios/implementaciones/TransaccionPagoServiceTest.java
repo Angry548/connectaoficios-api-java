@@ -33,6 +33,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TransaccionPagoServiceTest {
 
+    @Test
+    void obtenerPorId_debeConservarPromocionMontoYEstado() {
+        // Angel Mate: consulta positiva sin ejecutar cobros ni activar promociones.
+        when(transaccionPagoRepository.findById(1L)).thenReturn(Optional.of(transaccion));
+        var salida = transaccionPagoService.obtenerPorId(1L);
+        assertAll(() -> assertEquals(1L, salida.getId()),
+                () -> assertEquals(1L, salida.getPromocionId()),
+                () -> assertEquals(new BigDecimal("5.00"), salida.getMonto()),
+                () -> assertEquals(EstadoTransaccion.PENDIENTE, salida.getEstado()));
+        verifyNoInteractions(promocionService);
+        verify(transaccionPagoRepository, never()).save(any());
+    }
+
     @Mock
     private ITransaccionPagoRepository transaccionPagoRepository;
 

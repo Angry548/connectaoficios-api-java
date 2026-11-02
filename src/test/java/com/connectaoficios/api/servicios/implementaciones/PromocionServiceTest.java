@@ -34,6 +34,27 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PromocionServiceTest {
 
+    @Test
+    void obtenerPorId_conservaServicioPlanYEstado() {
+        // Angel Mate: consulta positiva; no duplica contratacion ni resumen.
+        when(promocionRepository.findById(1L)).thenReturn(Optional.of(promocion));
+        var salida = promocionService.obtenerPorId(1L);
+        assertAll(() -> assertEquals(1L, salida.getId()),
+                () -> assertEquals(1L, salida.getServicioId()),
+                () -> assertEquals(1L, salida.getPlanId()),
+                () -> assertEquals(EstadoPromocion.PENDIENTE, salida.getEstado()));
+        verify(promocionRepository, never()).save(any());
+    }
+
+    @Test
+    void obtenerPorTrabajador_filtraSinCruzarPropietarios() {
+        when(promocionRepository.findByTrabajadorId(TRABAJADOR_ID)).thenReturn(List.of(promocion));
+        var salida = promocionService.obtenerPorTrabajador(TRABAJADOR_ID);
+        assertEquals(1, salida.size());
+        assertEquals(TRABAJADOR_ID, salida.getFirst().getTrabajadorId());
+        verify(promocionRepository).findByTrabajadorId(TRABAJADOR_ID);
+    }
+
     @Mock
     private IPromocionRepository promocionRepository;
 

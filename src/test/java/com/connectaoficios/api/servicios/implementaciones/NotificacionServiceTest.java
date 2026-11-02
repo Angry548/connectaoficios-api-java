@@ -14,6 +14,15 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 class NotificacionServiceTest {
 
+    @Test
+    void pendientesConsultaSoloNoLeidasDelDestinatario() {
+        // Angel Mate: conteo pendiente no cubierto por la consulta general.
+        when(repo.countByUsuarioDestinoIdAndLeidaFalse(10)).thenReturn(3L);
+        assertEquals(3L, service.contarNoLeidas(10));
+        verify(repo).countByUsuarioDestinoIdAndLeidaFalse(10);
+        verifyNoMoreInteractions(repo);
+    }
+
  final INotificacionRepository repo=mock(INotificacionRepository.class);
  final NotificacionService service=new NotificacionService(repo);
  Notificacion notificacion;

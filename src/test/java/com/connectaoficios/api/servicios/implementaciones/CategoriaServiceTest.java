@@ -25,6 +25,25 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CategoriaServiceTest {
 
+    // Casos adicionales de Angel Mate; los escenarios existentes se reutilizan.
+    @Test
+    void obtenerPorId_debeConservarDatosDeCategoriaExistente() {
+        Categoria categoria = new Categoria();
+        categoria.setId(7L);
+        categoria.setNombre("Electricidad");
+        categoria.setDescripcion("Instalaciones");
+        categoria.setActivo(true);
+        when(categoriaRepository.findById(7L)).thenReturn(Optional.of(categoria));
+
+        CategoriaSalida salida = categoriaService.obtenerPorId(7L);
+
+        assertAll(() -> assertEquals(7L, salida.getId()),
+                () -> assertEquals("Electricidad", salida.getNombre()),
+                () -> assertEquals("Instalaciones", salida.getDescripcion()),
+                () -> assertTrue(salida.getActivo()));
+        verify(categoriaRepository, never()).save(any());
+    }
+
     @Mock
     private ICategoriaRepository categoriaRepository;
 

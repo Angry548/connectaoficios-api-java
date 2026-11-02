@@ -25,6 +25,22 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ZonaCoberturaServiceTest {
 
+    // Caso adicional de Angel Mate.
+    @Test
+    void obtenerPorId_debeConservarIdentidadDeZona() {
+        var zona = new com.connectaoficios.api.modelos.ZonaCobertura();
+        zona.setId(7L);
+        zona.setDepartamento("San Salvador");
+        zona.setMunicipio("San Salvador Centro");
+        zona.setActivo(true);
+        when(zonaRepository.findById(7L)).thenReturn(Optional.of(zona));
+        var salida = zonaService.obtenerPorId(7L);
+        assertEquals(7L, salida.getId());
+        assertEquals("San Salvador", salida.getDepartamento());
+        assertEquals("San Salvador Centro", salida.getMunicipio());
+        verify(zonaRepository, never()).save(any());
+    }
+
     @Mock
     private IZonaCoberturaRepository zonaRepository;
 

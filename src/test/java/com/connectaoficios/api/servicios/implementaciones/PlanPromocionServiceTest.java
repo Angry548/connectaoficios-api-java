@@ -26,6 +26,18 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PlanPromocionServiceTest {
 
+    @Test
+    void obtenerPorId_debeConservarPrecioDuracionYEstado() {
+        // Angel Mate: consulta positiva; el caso inexistente ya se reutiliza.
+        when(planPromocionRepository.findById(1L)).thenReturn(Optional.of(plan));
+        var salida = planPromocionService.obtenerPorId(1L);
+        assertAll(() -> assertEquals(1L, salida.getId()),
+                () -> assertEquals(new BigDecimal("5.00"), salida.getPrecio()),
+                () -> assertEquals(7, salida.getDuracionDias()),
+                () -> assertTrue(salida.getActivo()));
+        verify(planPromocionRepository, never()).save(any());
+    }
+
     @Mock
     private IPlanPromocionRepository planPromocionRepository;
 
