@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -136,6 +138,90 @@ class ServicioServiceTest {
                 servicioRepository,
                 times(1)
         ).save(any(Servicio.class));
+    }
+
+    @Test
+    void publicar_debeCrearServicioConMultiplesZonasCobertura() {
+
+        perfilTrabajador.setTrabajadorId(1);
+        categoria.setNombre("Plomería");
+        categoria.setActivo(true);
+
+        ZonaCobertura zona10 = new ZonaCobertura();
+        zona10.setId(10L);
+        zona10.setDepartamento("San Salvador");
+        zona10.setMunicipio("Municipio 10");
+
+        ZonaCobertura zona20 = new ZonaCobertura();
+        zona20.setId(20L);
+        zona20.setDepartamento("San Salvador");
+        zona20.setMunicipio("Municipio 20");
+
+        ZonaCobertura zona30 = new ZonaCobertura();
+        zona30.setId(30L);
+        zona30.setDepartamento("San Salvador");
+        zona30.setMunicipio("Municipio 30");
+
+        Set<Long> zonasIds = Set.of(10L, 20L, 30L);
+
+        ServicioGuardar dto = new ServicioGuardar();
+        dto.setPerfilTrabajadorId(1L);
+        dto.setCategoriaId(1L);
+        dto.setTitulo("Plomería básica");
+        dto.setDescripcion("Instalación y reparación");
+        dto.setTarifaMinima(new BigDecimal("25.00"));
+        dto.setTarifaMaxima(new BigDecimal("60.00"));
+        dto.setZonasCoberturaIds(zonasIds);
+
+        when(
+                perfilTrabajadorRepository.findById(1L)
+        ).thenReturn(Optional.of(perfilTrabajador));
+
+        when(
+                categoriaRepository.findById(1L)
+        ).thenReturn(Optional.of(categoria));
+
+        when(
+                zonaCoberturaRepository.findAllById(zonasIds)
+        ).thenReturn(List.of(zona10, zona20, zona30));
+
+        when(
+                servicioRepository.save(any(Servicio.class))
+        ).thenAnswer(invocation -> {
+            Servicio guardado = invocation.getArgument(0);
+            guardado.setId(100L);
+            return guardado;
+        });
+
+        ServicioSalida resultado = servicioService.publicar(dto);
+
+        assertNotNull(resultado);
+        assertEquals(100L, resultado.getId());
+        assertEquals(1L, resultado.getPerfilTrabajadorId());
+        assertEquals(1L, resultado.getCategoriaId());
+        assertEquals(EstadoServicio.ACTIVO, resultado.getEstado());
+        assertEquals(zonasIds, resultado.getZonasCoberturaIds());
+
+        ArgumentCaptor<Servicio> servicioCaptor =
+                ArgumentCaptor.forClass(Servicio.class);
+
+        verify(
+                servicioRepository,
+                times(1)
+        ).save(servicioCaptor.capture());
+
+        Servicio servicioGuardado = servicioCaptor.getValue();
+
+        assertFalse(servicioGuardado.getEliminado());
+        assertEquals(3, servicioGuardado.getZonasCobertura().size());
+
+        Set<Long> zonasGuardadasIds =
+                servicioGuardado.getZonasCobertura()
+                        .stream()
+                        .map(ZonaCobertura::getId)
+                        .collect(Collectors.toSet());
+
+        assertEquals(zonasIds, zonasGuardadasIds);
     }
 
     @Test
