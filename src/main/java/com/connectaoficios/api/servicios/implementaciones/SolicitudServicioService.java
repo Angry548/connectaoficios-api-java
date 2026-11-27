@@ -37,17 +37,23 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     private final IServicioRepository servicioRepository;
     private final INotificacionService notificacionService;
     private final IReputacionTrabajadorService reputacionTrabajadorService;
+    private final ConversacionPermanenteService conversacionPermanenteService;
+    private final ReintentoConversacion reintentoConversacion;
 
     public SolicitudServicioService(
             ISolicitudServicioRepository solicitudRepository,
             IServicioRepository servicioRepository,
             INotificacionService notificacionService,
-            IReputacionTrabajadorService reputacionTrabajadorService
+            IReputacionTrabajadorService reputacionTrabajadorService,
+            ConversacionPermanenteService conversacionPermanenteService,
+            ReintentoConversacion reintentoConversacion
     ) {
         this.solicitudRepository = solicitudRepository;
         this.servicioRepository = servicioRepository;
         this.notificacionService = notificacionService;
         this.reputacionTrabajadorService = reputacionTrabajadorService;
+        this.conversacionPermanenteService = conversacionPermanenteService;
+        this.reintentoConversacion = reintentoConversacion;
     }
 
     @Override
@@ -196,10 +202,13 @@ public class SolicitudServicioService implements ISolicitudServicioService {
     }
 
     @Override
-    @Transactional
     public SolicitudServicioRespuesta guardar(
             SolicitudServicioGuardar dto
     ) {
+        return reintentoConversacion.ejecutar(() -> guardarEnTransaccion(dto));
+    }
+
+    private SolicitudServicioRespuesta guardarEnTransaccion(SolicitudServicioGuardar dto) {
         Servicio servicio =
                 servicioRepository
                         .findByIdAndEliminadoFalse(
@@ -211,6 +220,8 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                                                 + dto.getServicioId()
                                 )
                         );
+
+        conversacionPermanenteService.bloquearServicio(servicio.getId());
 
         SolicitudServicio solicitud =
                 new SolicitudServicio();
@@ -251,6 +262,8 @@ public class SolicitudServicioService implements ISolicitudServicioService {
                 solicitudRepository.save(
                         solicitud
                 );
+
+        guardada.setConversacion(conversacionPermanenteService.obtenerOCrear(guardada));
 
         crearNotificacionNuevaSolicitud(
                 guardada
@@ -714,6 +727,9 @@ public class SolicitudServicioService implements ISolicitudServicioService {
         respuesta.setIdSolicitud(
                 entidad.getId()
         );
+        if (entidad.getConversacion() != null) {
+            respuesta.setConversacionId(entidad.getConversacion().getId());
+        }
 
         if (entidad.getServicio() != null) {
             respuesta.setServicioId(

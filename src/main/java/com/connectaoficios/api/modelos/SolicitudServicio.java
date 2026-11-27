@@ -27,6 +27,10 @@ public class SolicitudServicio {
     )
     private Servicio servicio;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversacion_id", foreignKey = @ForeignKey(name = "fk_solicitud_conversacion"))
+    private Conversacion conversacion;
+
     @Column(name = "cliente_id", nullable = false)
     private Integer clienteId;
 

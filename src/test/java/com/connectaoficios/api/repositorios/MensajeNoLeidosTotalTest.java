@@ -80,6 +80,27 @@ class MensajeNoLeidosTotalTest {
         comprobar(10, 0);
     }
 
+    @Test
+    void baseDeDatosRechazaDosChatsConLaMismaCombinacion() {
+        var primera = conversacion(10, 20);
+        var original = primera.getSolicitud();
+        var segundaSolicitud = new SolicitudServicio();
+        segundaSolicitud.setServicio(original.getServicio());
+        segundaSolicitud.setClienteId(10);
+        segundaSolicitud.setTrabajadorId(20);
+        segundaSolicitud.setFechaPropuesta(LocalDate.now());
+        segundaSolicitud.setHoraAproximada(LocalTime.NOON);
+        segundaSolicitud.setDireccion("Direccion");
+        segundaSolicitud.setDescripcionTrabajo("Trabajo");
+        em.persist(segundaSolicitud);
+        var duplicada = new Conversacion();
+        duplicada.setSolicitud(segundaSolicitud);
+        org.junit.jupiter.api.Assertions.assertThrows(jakarta.persistence.PersistenceException.class, () -> {
+            em.persist(duplicada);
+            em.flush();
+        });
+    }
+
     private void comprobar(int usuarioId, long esperado) {
         em.flush();
         em.clear();

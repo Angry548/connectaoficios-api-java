@@ -18,6 +18,10 @@ import java.util.Optional;
 public interface IServicioRepository
         extends JpaRepository<Servicio, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Servicio s where s.id = :id")
+    Optional<Servicio> bloquearPorId(@Param("id") Long id);
+
     Optional<Servicio> findByIdAndEliminadoFalse(
             Long id
     );

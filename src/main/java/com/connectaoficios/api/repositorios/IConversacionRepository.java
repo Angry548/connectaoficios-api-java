@@ -16,94 +16,36 @@ import java.util.Optional;
 public interface IConversacionRepository
         extends JpaRepository<Conversacion, Long> {
 
-    Optional<Conversacion> findBySolicitudId(Long solicitudId);
+    @Query("select c from SolicitudServicio s join s.conversacion c where s.id = :solicitudId")
+    Optional<Conversacion> findBySolicitudId(@Param("solicitudId") Long solicitudId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Conversacion c where c.clienteId = :cliente and c.trabajadorId = :trabajador and c.servicio.id = :servicio")
+    Optional<Conversacion> buscarConBloqueo(@Param("cliente") Integer cliente, @Param("trabajador") Integer trabajador, @Param("servicio") Long servicio);
 
     boolean existsBySolicitudId(Long solicitudId);
 
-    @Query(
-            value = """
-                    SELECT c
-                    FROM Conversacion c
-                    JOIN FETCH c.solicitud s
-                    WHERE
-                        (
-                            s.clienteId = :usuarioId
-                            OR s.trabajadorId = :usuarioId
-                        )
-                        AND (
-                            :solicitudId IS NULL
-                            OR s.id = :solicitudId
-                        )
-                        AND (
-                            :estadoSolicitud IS NULL
-                            OR s.estado = :estadoSolicitud
-                        )
-                        AND (
-                            :fechaDesde IS NULL
-                            OR c.fechaCreacion >= :fechaDesde
-                        )
-                        AND (
-                            :fechaHasta IS NULL
-                            OR c.fechaCreacion <= :fechaHasta
-                        )
-                        AND (
-                            :puedeEnviarMensajes IS NULL
-                            OR (
-                                :puedeEnviarMensajes = true
-                                AND (
-                                    s.estado = com.connectaoficios.api.enums.EstadoSolicitud.ACEPTADA
-                                    OR s.estado = com.connectaoficios.api.enums.EstadoSolicitud.EN_PROCESO
-                                )
-                            )
-                            OR (
-                                :puedeEnviarMensajes = false
-                                AND s.estado <> com.connectaoficios.api.enums.EstadoSolicitud.ACEPTADA
-                                AND s.estado <> com.connectaoficios.api.enums.EstadoSolicitud.EN_PROCESO
-                            )
-                        )
-                    """,
-            countQuery = """
-                    SELECT COUNT(c)
-                    FROM Conversacion c
-                    JOIN c.solicitud s
-                    WHERE
-                        (
-                            s.clienteId = :usuarioId
-                            OR s.trabajadorId = :usuarioId
-                        )
-                        AND (
-                            :solicitudId IS NULL
-                            OR s.id = :solicitudId
-                        )
-                        AND (
-                            :estadoSolicitud IS NULL
-                            OR s.estado = :estadoSolicitud
-                        )
-                        AND (
-                            :fechaDesde IS NULL
-                            OR c.fechaCreacion >= :fechaDesde
-                        )
-                        AND (
-                            :fechaHasta IS NULL
-                            OR c.fechaCreacion <= :fechaHasta
-                        )
-                        AND (
-                            :puedeEnviarMensajes IS NULL
-                            OR (
-                                :puedeEnviarMensajes = true
-                                AND (
-                                    s.estado = com.connectaoficios.api.enums.EstadoSolicitud.ACEPTADA
-                                    OR s.estado = com.connectaoficios.api.enums.EstadoSolicitud.EN_PROCESO
-                                )
-                            )
-                            OR (
-                                :puedeEnviarMensajes = false
-                                AND s.estado <> com.connectaoficios.api.enums.EstadoSolicitud.ACEPTADA
-                                AND s.estado <> com.connectaoficios.api.enums.EstadoSolicitud.EN_PROCESO
-                            )
-                        )
-                    """
-    )
+    @Query(value = """
+            select c from Conversacion c join fetch c.solicitud anchor join fetch anchor.servicio
+            where (c.clienteId = :usuarioId or c.trabajadorId = :usuarioId)
+              and ((:solicitudId is null and :estadoSolicitud is null) or exists
+                   (select s.id from SolicitudServicio s where s.conversacion = c
+                    and (:solicitudId is null or s.id = :solicitudId)
+                    and (:estadoSolicitud is null or s.estado = :estadoSolicitud)))
+              and (:fechaDesde is null or c.fechaCreacion >= :fechaDesde)
+              and (:fechaHasta is null or c.fechaCreacion <= :fechaHasta)
+              and (:puedeEnviarMensajes is null or :puedeEnviarMensajes = true)
+            """, countQuery = """
+            select count(c) from Conversacion c
+            where (c.clienteId = :usuarioId or c.trabajadorId = :usuarioId)
+              and ((:solicitudId is null and :estadoSolicitud is null) or exists
+                   (select s.id from SolicitudServicio s where s.conversacion = c
+                    and (:solicitudId is null or s.id = :solicitudId)
+                    and (:estadoSolicitud is null or s.estado = :estadoSolicitud)))
+              and (:fechaDesde is null or c.fechaCreacion >= :fechaDesde)
+              and (:fechaHasta is null or c.fechaCreacion <= :fechaHasta)
+              and (:puedeEnviarMensajes is null or :puedeEnviarMensajes = true)
+            """)
     Page<Conversacion> buscarConversacionesUsuario(
             @Param("usuarioId") Integer usuarioId,
             @Param("solicitudId") Long solicitudId,

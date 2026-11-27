@@ -4,7 +4,6 @@ import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.dtos.mensaje.MensajeFiltroDTO;
 import com.connectaoficios.api.dtos.mensaje.MensajeGuardar;
 import com.connectaoficios.api.dtos.mensaje.MensajeSalida;
-import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.excepciones.RecursoNoEncontradoException;
 import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.modelos.Conversacion;
@@ -59,10 +58,6 @@ public class MensajeService implements IMensajeService {
         validarParticipante(
                 conversacion,
                 remitenteId
-        );
-
-        validarEnvioPermitido(
-                conversacion
         );
 
         Mensaje mensaje =
@@ -378,25 +373,6 @@ public class MensajeService implements IMensajeService {
 
             throw new ReglaNegocioException(
                     "El usuario no pertenece a esta conversación"
-            );
-        }
-    }
-
-    private void validarEnvioPermitido(
-            Conversacion conversacion
-    ) {
-
-        EstadoSolicitud estado =
-                conversacion
-                        .getSolicitud()
-                        .getEstado();
-
-        if (estado != EstadoSolicitud.ACEPTADA
-                && estado != EstadoSolicitud.EN_PROCESO) {
-
-            throw new ReglaNegocioException(
-                    "No se pueden enviar mensajes porque "
-                            + "la conversación está en modo lectura"
             );
         }
     }

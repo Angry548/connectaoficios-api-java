@@ -45,6 +45,12 @@ class ConversacionServiceTest {
     @Mock
     private com.connectaoficios.api.repositorios.IPerfilTrabajadorRepository perfilTrabajadorRepository;
 
+    @Mock
+    private ConversacionPermanenteService permanente;
+
+    @Mock
+    private ReintentoConversacion reintento;
+
     private ConversacionService conversacionService;
 
     private SolicitudServicio solicitud;
@@ -57,8 +63,12 @@ class ConversacionServiceTest {
                         conversacionRepository,
                         solicitudServicioRepository,
                         perfilClienteRepository,
-                        perfilTrabajadorRepository
+                        perfilTrabajadorRepository,
+                        permanente,
+                        reintento
                 );
+        lenient().when(reintento.ejecutar(any())).thenAnswer(i ->
+                ((java.util.function.Supplier<?>) i.getArgument(0)).get());
 
         solicitud = new SolicitudServicio();
         solicitud.setId(1L);
@@ -143,23 +153,10 @@ class ConversacionServiceTest {
                 solicitudServicioRepository.findById(1L)
         ).thenReturn(Optional.of(solicitud));
 
-        when(
-                conversacionRepository.existsBySolicitudId(1L)
-        ).thenReturn(false);
-
-        when(
-                conversacionRepository.save(
-                        any(Conversacion.class)
-                )
-        ).thenAnswer(invocation -> {
-
-            Conversacion conversacion =
-                    invocation.getArgument(0);
-
-            conversacion.setId(1L);
-
-            return conversacion;
-        });
+        Conversacion existente = new Conversacion();
+        existente.setId(1L);
+        existente.setSolicitud(solicitud);
+        when(permanente.obtenerOCrear(solicitud)).thenReturn(existente);
 
         ConversacionSalida resultado =
                 conversacionService.guardar(
@@ -174,10 +171,7 @@ class ConversacionServiceTest {
         assertEquals(20, resultado.getTrabajadorId());
         assertTrue(resultado.getPuedeEnviarMensajes());
 
-        verify(
-                conversacionRepository,
-                times(1)
-        ).save(any(Conversacion.class));
+        verify(permanente).obtenerOCrear(solicitud);
     }
 
     @Test
@@ -192,23 +186,10 @@ class ConversacionServiceTest {
                 solicitudServicioRepository.findById(1L)
         ).thenReturn(Optional.of(solicitud));
 
-        when(
-                conversacionRepository.existsBySolicitudId(1L)
-        ).thenReturn(false);
-
-        when(
-                conversacionRepository.save(
-                        any(Conversacion.class)
-                )
-        ).thenAnswer(invocation -> {
-
-            Conversacion conversacion =
-                    invocation.getArgument(0);
-
-            conversacion.setId(1L);
-
-            return conversacion;
-        });
+        Conversacion existente = new Conversacion();
+        existente.setId(1L);
+        existente.setSolicitud(solicitud);
+        when(permanente.obtenerOCrear(solicitud)).thenReturn(existente);
 
         ConversacionSalida resultado =
                 conversacionService.guardar(
@@ -247,63 +228,18 @@ class ConversacionServiceTest {
     }
 
     @Test
-    void guardar_debeRechazarSolicitudPendiente() {
-
-        solicitud.setEstado(
-                EstadoSolicitud.PENDIENTE
-        );
-
-        ConversacionGuardar dto =
-                new ConversacionGuardar();
-
+    void guardar_esIdempotenteInclusoSiSolicitudEstaPendiente() {
+        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        ConversacionGuardar dto = new ConversacionGuardar();
         dto.setSolicitudId(1L);
-
-        when(
-                solicitudServicioRepository.findById(1L)
-        ).thenReturn(Optional.of(solicitud));
-
-        assertThrows(
-                ReglaNegocioException.class,
-                () -> conversacionService.guardar(
-                        dto,
-                        10
-                )
-        );
-
-        verify(
-                conversacionRepository,
-                never()
-        ).save(any());
-    }
-
-    @Test
-    void guardar_debeRechazarConversacionDuplicada() {
-
-        ConversacionGuardar dto =
-                new ConversacionGuardar();
-
-        dto.setSolicitudId(1L);
-
-        when(
-                solicitudServicioRepository.findById(1L)
-        ).thenReturn(Optional.of(solicitud));
-
-        when(
-                conversacionRepository.existsBySolicitudId(1L)
-        ).thenReturn(true);
-
-        assertThrows(
-                ReglaNegocioException.class,
-                () -> conversacionService.guardar(
-                        dto,
-                        10
-                )
-        );
-
-        verify(
-                conversacionRepository,
-                never()
-        ).save(any());
+        Conversacion existente = new Conversacion();
+        existente.setId(50L);
+        existente.setSolicitud(solicitud);
+        when(solicitudServicioRepository.findById(1L)).thenReturn(Optional.of(solicitud));
+        when(permanente.obtenerOCrear(solicitud)).thenReturn(existente);
+        assertEquals(50L, conversacionService.guardar(dto, 10).getId());
+        assertEquals(50L, conversacionService.guardar(dto, 10).getId());
+        assertSame(existente, solicitud.getConversacion());
     }
 
     @Test
@@ -330,7 +266,7 @@ class ConversacionServiceTest {
                 );
 
         assertNotNull(resultado);
-        assertFalse(
+        assertTrue(
                 resultado.getPuedeEnviarMensajes()
         );
     }

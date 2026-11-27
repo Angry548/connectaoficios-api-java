@@ -15,7 +15,9 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(
                         name = "uk_conversacion_solicitud",
                         columnNames = "solicitud_id"
-                )
+                ),
+                @UniqueConstraint(name = "uk_conversacion_participantes_servicio",
+                        columnNames = {"cliente_id", "trabajador_id", "servicio_id"})
         }
 )
 public class Conversacion {
@@ -33,11 +35,27 @@ public class Conversacion {
     )
     private SolicitudServicio solicitud;
 
+    @Column(name = "cliente_id", nullable = false, updatable = false)
+    private Integer clienteId;
+
+    @Column(name = "trabajador_id", nullable = false, updatable = false)
+    private Integer trabajadorId;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "servicio_id", nullable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_conversacion_servicio"))
+    private Servicio servicio;
+
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
     @PrePersist
     public void prePersist() {
+        if (solicitud != null) {
+            if (clienteId == null) clienteId = solicitud.getClienteId();
+            if (trabajadorId == null) trabajadorId = solicitud.getTrabajadorId();
+            if (servicio == null) servicio = solicitud.getServicio();
+        }
         if (fechaCreacion == null) {
             fechaCreacion = LocalDateTime.now();
         }

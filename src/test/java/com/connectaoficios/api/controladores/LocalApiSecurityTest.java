@@ -25,6 +25,9 @@ class LocalApiSecurityTest {
     @Autowired com.connectaoficios.api.repositorios.ICategoriaRepository categorias;
     @Autowired com.connectaoficios.api.repositorios.IZonaCoberturaRepository zonas;
     @Autowired com.connectaoficios.api.repositorios.IPlanPromocionRepository planes;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    com.connectaoficios.api.repositorios.IConversacionRepository conversaciones;
+    @Autowired com.connectaoficios.api.repositorios.ISolicitudServicioRepository solicitudes;
 
     String tokenRol(int id, String rol) throws Exception {
         var claims = new JWTClaimsSet.Builder().subject("" + id).issuer(issuer).audience(audience)
@@ -85,6 +88,67 @@ class LocalApiSecurityTest {
         enviar("GET", "/api/mensajes/no-leidos/total", trabajador, null).andExpect(jsonPath("$.total").value(0));
         enviar("PATCH", "/api/solicitudes/" + solicitud + "/iniciar", trabajador, null).andExpect(status().isOk());
         enviar("PATCH", "/api/solicitudes/" + solicitud + "/completar", trabajador, null).andExpect(status().isOk());
+        enviar("POST", "/api/mensajes", cliente, "{\"conversacionId\":" + conversacion + ",\"contenido\":\"Despues de completar\"}")
+                .andExpect(status().isCreated());
+        enviar("POST", "/api/mensajes", trabajador, "{\"conversacionId\":" + conversacion + ",\"contenido\":\"Seguimos hablando\"}")
+                .andExpect(status().isCreated());
+        // El primer SELECT simula que un escritor externo creó el chat después
+        // de la búsqueda. El INSERT real choca con el UNIQUE en H2.
+        var consultasSimuladas = new java.util.concurrent.atomic.AtomicInteger();
+        org.mockito.Mockito.doAnswer(invocacion -> consultasSimuladas.getAndIncrement() == 0
+                ? java.util.Optional.empty() : conversaciones.findById(conversacion))
+                .when(conversaciones).buscarConBloqueo(20020, 20010, servicio);
+        long solicitud2 = id(enviar("POST", "/api/solicitudes", cliente,
+                "{\"servicioId\":" + servicio + ",\"fechaPropuesta\":\"" + java.time.LocalDate.now().plusDays(2)
+                        + "\",\"horaAproximada\":\"09:00:00\",\"direccionServicio\":\"Local\",\"descripcionTrabajo\":\"Otra vez\"}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.conversacionId").value(conversacion)), "idSolicitud");
+        org.junit.jupiter.api.Assertions.assertEquals(conversacion,
+                solicitudes.findById(solicitud2).orElseThrow().getConversacion().getId());
+        org.junit.jupiter.api.Assertions.assertEquals(conversacion,
+                solicitudes.findById(solicitud).orElseThrow().getConversacion().getId());
+        org.junit.jupiter.api.Assertions.assertEquals(2, solicitudes.findByClienteId(20020).stream()
+                .filter(s -> s.getServicio().getId().equals(servicio)).count());
+        org.mockito.Mockito.verify(conversaciones, org.mockito.Mockito.atLeast(2))
+                .buscarConBloqueo(20020, 20010, servicio);
+        enviar("GET", "/api/conversaciones/solicitud/" + solicitud2, cliente, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(conversacion))
+                .andExpect(jsonPath("$.servicioId").value(servicio))
+                .andExpect(jsonPath("$.servicioTitulo").value("Servicio integración"));
+        enviar("POST", "/api/conversaciones", trabajador, "{\"solicitudId\":" + solicitud2 + "}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(conversacion));
+        enviar("GET", "/api/mensajes/conversacion/" + conversacion, cliente, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(3));
+        enviar("GET", "/api/mensajes/conversacion/" + conversacion, ajeno, null)
+                .andExpect(status().isBadRequest());
+        enviar("PATCH", "/api/solicitudes/" + solicitud2 + "/rechazar", trabajador,
+                "{\"motivoRechazo\":\"No disponible\"}").andExpect(status().isOk());
+        enviar("POST", "/api/mensajes", cliente, "{\"conversacionId\":" + conversacion + ",\"contenido\":\"Tras rechazo\"}")
+                .andExpect(status().isCreated());
+        long solicitud3 = id(enviar("POST", "/api/solicitudes", cliente,
+                "{\"servicioId\":" + servicio + ",\"fechaPropuesta\":\"" + java.time.LocalDate.now().plusDays(3)
+                        + "\",\"horaAproximada\":\"09:00:00\",\"direccionServicio\":\"Local\",\"descripcionTrabajo\":\"Otra vez\"}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.conversacionId").value(conversacion)), "idSolicitud");
+        enviar("PATCH", "/api/solicitudes/" + solicitud3 + "/cancelar", cliente,
+                "{\"motivoCancelacion\":\"Cambio de planes\"}").andExpect(status().isOk());
+        enviar("POST", "/api/mensajes", trabajador, "{\"conversacionId\":" + conversacion + ",\"contenido\":\"Tras cancelacion\"}")
+                .andExpect(status().isCreated());
+        long otroServicio = id(enviar("POST", "/api/servicios", trabajador,
+                body.replace("Servicio integración", "Segundo servicio")).andExpect(status().isCreated()), "id");
+        String contratarOtro = "{\"servicioId\":" + otroServicio + ",\"fechaPropuesta\":\""
+                + java.time.LocalDate.now().plusDays(4)
+                + "\",\"horaAproximada\":\"09:00:00\",\"direccionServicio\":\"Local\",\"descripcionTrabajo\":\"Concurrente\"}";
+        var inicio = new java.util.concurrent.CountDownLatch(1);
+        var ejecutor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var primero = ejecutor.submit(() -> { inicio.await(); return id(enviar("POST", "/api/solicitudes", cliente, contratarOtro).andExpect(status().isCreated()), "conversacionId"); });
+            var segundo = ejecutor.submit(() -> { inicio.await(); return id(enviar("POST", "/api/solicitudes", cliente, contratarOtro).andExpect(status().isCreated()), "conversacionId"); });
+            inicio.countDown();
+            long otroChat = primero.get(30, java.util.concurrent.TimeUnit.SECONDS);
+            org.junit.jupiter.api.Assertions.assertEquals(otroChat, segundo.get(30, java.util.concurrent.TimeUnit.SECONDS));
+            org.junit.jupiter.api.Assertions.assertNotEquals(conversacion, otroChat);
+        } finally {
+            ejecutor.shutdownNow();
+        }
         enviar("POST", "/api/resenas", cliente, "{\"solicitudId\":" + solicitud + ",\"calificacion\":5}").andExpect(status().isCreated());
         enviar("GET", "/api/reputaciones/trabajador/" + perfil.getId(), cliente, null)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalResenas").value(1))

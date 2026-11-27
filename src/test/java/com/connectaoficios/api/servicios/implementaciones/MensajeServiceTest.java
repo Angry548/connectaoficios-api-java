@@ -149,7 +149,7 @@ class MensajeServiceTest {
     }
 
     @Test
-    void guardar_debeBloquearEnvioCuandoSolicitudCompletada() {
+    void guardar_debePermitirEnvioCuandoSolicitudCompletada() {
 
         solicitud.setEstado(
                 EstadoSolicitud.COMPLETADA
@@ -165,22 +165,27 @@ class MensajeServiceTest {
                 conversacionRepository.findById(1L)
         ).thenReturn(Optional.of(conversacion));
 
-        assertThrows(
-                ReglaNegocioException.class,
-                () -> mensajeService.guardar(
-                        dto,
-                        10
-                )
-        );
+        when(mensajeRepository.save(any(Mensaje.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        verify(
-                mensajeRepository,
-                never()
-        ).save(any());
+        MensajeSalida resultado = mensajeService.guardar(dto, 10);
 
-        verifyNoInteractions(
-                chatTiempoRealService
-        );
+        assertEquals("Mensaje", resultado.getContenido());
+        verify(mensajeRepository).save(any(Mensaje.class));
+        verify(chatTiempoRealService).publicarMensaje(any(MensajeSalida.class));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(EstadoSolicitud.class)
+    void guardar_permiteTodosLosEstadosParaParticipantes(EstadoSolicitud estado) {
+        solicitud.setEstado(estado);
+        MensajeGuardar dto = new MensajeGuardar();
+        dto.setConversacionId(1L);
+        dto.setContenido("Mensaje");
+        when(conversacionRepository.findById(1L)).thenReturn(Optional.of(conversacion));
+        when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(i -> i.getArgument(0));
+        assertEquals("Mensaje", mensajeService.guardar(dto, 20).getContenido());
+        verify(chatTiempoRealService).publicarMensaje(any(MensajeSalida.class));
     }
 
     @Test

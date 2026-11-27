@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 public class ConversacionSalida {
 
     private Long id;
+    private Long servicioId;
+    private String servicioTitulo;
     private Long solicitudId;
     private Integer clienteId;
     private Integer trabajadorId;

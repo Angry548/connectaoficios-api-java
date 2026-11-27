@@ -4,7 +4,6 @@ import com.connectaoficios.api.dtos.comun.PaginaSalida;
 import com.connectaoficios.api.dtos.conversacion.ConversacionFiltroDTO;
 import com.connectaoficios.api.dtos.conversacion.ConversacionGuardar;
 import com.connectaoficios.api.dtos.conversacion.ConversacionSalida;
-import com.connectaoficios.api.enums.EstadoSolicitud;
 import com.connectaoficios.api.excepciones.RecursoNoEncontradoException;
 import com.connectaoficios.api.excepciones.ReglaNegocioException;
 import com.connectaoficios.api.modelos.Conversacion;
@@ -34,25 +33,34 @@ public class ConversacionService implements IConversacionService {
     private final ISolicitudServicioRepository solicitudServicioRepository;
     private final IPerfilClienteRepository perfilClienteRepository;
     private final IPerfilTrabajadorRepository perfilTrabajadorRepository;
+    private final ConversacionPermanenteService conversacionPermanenteService;
+    private final ReintentoConversacion reintentoConversacion;
 
     public ConversacionService(
             IConversacionRepository conversacionRepository,
             ISolicitudServicioRepository solicitudServicioRepository,
             IPerfilClienteRepository perfilClienteRepository,
-            IPerfilTrabajadorRepository perfilTrabajadorRepository
+            IPerfilTrabajadorRepository perfilTrabajadorRepository,
+            ConversacionPermanenteService conversacionPermanenteService,
+            ReintentoConversacion reintentoConversacion
     ) {
         this.conversacionRepository = conversacionRepository;
         this.solicitudServicioRepository = solicitudServicioRepository;
         this.perfilClienteRepository = perfilClienteRepository;
         this.perfilTrabajadorRepository = perfilTrabajadorRepository;
+        this.conversacionPermanenteService = conversacionPermanenteService;
+        this.reintentoConversacion = reintentoConversacion;
     }
 
     @Override
-    @Transactional
     public ConversacionSalida guardar(
             ConversacionGuardar conversacionGuardar,
             Integer usuarioId
     ) {
+        return reintentoConversacion.ejecutar(() -> guardarEnTransaccion(conversacionGuardar, usuarioId));
+    }
+
+    private ConversacionSalida guardarEnTransaccion(ConversacionGuardar conversacionGuardar, Integer usuarioId) {
 
         SolicitudServicio solicitud =
                 solicitudServicioRepository
@@ -68,30 +76,8 @@ public class ConversacionService implements IConversacionService {
                 usuarioId
         );
 
-        validarEstadoParaChat(
-                solicitud
-        );
-
-        if (conversacionRepository.existsBySolicitudId(
-                solicitud.getId()
-        )) {
-
-            throw new ReglaNegocioException(
-                    "La solicitud ya posee una conversación"
-            );
-        }
-
-        Conversacion conversacion =
-                new Conversacion();
-
-        conversacion.setSolicitud(
-                solicitud
-        );
-
-        Conversacion conversacionGuardada =
-                conversacionRepository.save(
-                        conversacion
-                );
+        Conversacion conversacionGuardada = conversacionPermanenteService.obtenerOCrear(solicitud);
+        solicitud.setConversacion(conversacionGuardada);
 
         return convertirASalida(
                 conversacionGuardada
@@ -290,34 +276,6 @@ public class ConversacionService implements IConversacionService {
         }
     }
 
-    private void validarEstadoParaChat(
-            SolicitudServicio solicitud
-    ) {
-
-        EstadoSolicitud estado =
-                solicitud.getEstado();
-
-        if (estado != EstadoSolicitud.ACEPTADA
-                && estado != EstadoSolicitud.EN_PROCESO) {
-
-            throw new ReglaNegocioException(
-                    "La conversación solo puede habilitarse cuando "
-                            + "la solicitud está aceptada o en proceso"
-            );
-        }
-    }
-
-    private boolean puedeEnviarMensajes(
-            SolicitudServicio solicitud
-    ) {
-
-        EstadoSolicitud estado =
-                solicitud.getEstado();
-
-        return estado == EstadoSolicitud.ACEPTADA
-                || estado == EstadoSolicitud.EN_PROCESO;
-    }
-
     private ConversacionSalida convertirASalida(
             Conversacion conversacion
     ) {
@@ -361,11 +319,11 @@ public class ConversacionService implements IConversacionService {
                 conversacion.getFechaCreacion()
         );
 
-        salida.setPuedeEnviarMensajes(
-                puedeEnviarMensajes(
-                        solicitud
-                )
-        );
+        salida.setPuedeEnviarMensajes(true);
+        if (solicitud.getServicio() != null) {
+            salida.setServicioId(solicitud.getServicio().getId());
+            salida.setServicioTitulo(solicitud.getServicio().getTitulo());
+        }
 
         return salida;
     }

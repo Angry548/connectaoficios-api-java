@@ -13,6 +13,8 @@ public class SolicitudServicioRespuesta {
 
     private Long idSolicitud;
 
+    private Long conversacionId;
+
     private Long servicioId;
 
     private String servicioTitulo;

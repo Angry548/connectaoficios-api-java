@@ -45,6 +45,12 @@ class SolicitudServicioServiceTest {
     @Mock
     private IReputacionTrabajadorService reputacionTrabajadorService;
 
+    @Mock
+    private ConversacionPermanenteService permanente;
+
+    @Mock
+    private ReintentoConversacion reintento;
+
     private SolicitudServicioService solicitudService;
 
     private SolicitudServicio solicitud;
@@ -57,8 +63,12 @@ class SolicitudServicioServiceTest {
                 solicitudRepository,
                 servicioRepository,
                 notificacionService,
-                reputacionTrabajadorService
+                reputacionTrabajadorService,
+                permanente,
+                reintento
         );
+        lenient().when(reintento.ejecutar(any())).thenAnswer(i ->
+                ((java.util.function.Supplier<?>) i.getArgument(0)).get());
 
         servicio = new Servicio();
         servicio.setId(1L);
