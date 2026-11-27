@@ -1,6 +1,8 @@
 package com.connectaoficios.api.seguridad.configuracion;
 
 import com.connectaoficios.api.seguridad.ManejadorAccesoDenegado;
+import com.connectaoficios.api.observabilidad.FiltroIdentidad;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import com.connectaoficios.api.seguridad.ManejadorNoAutenticado;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -61,6 +63,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
 
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/monitoring").permitAll()
+                        .requestMatchers("/monitoring/**", "/monitoring").hasAnyRole("ADMINISTRADOR", "ADMINISTRADORPRINCIPAL")
                         .anyRequest().authenticated()
                 )
 
@@ -72,6 +76,7 @@ public class SecurityConfig {
                         )
                 );
 
+        http.addFilterAfter(new FiltroIdentidad(), BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 }

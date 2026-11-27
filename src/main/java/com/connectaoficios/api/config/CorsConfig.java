@@ -60,7 +60,7 @@ public class CorsConfig {
 
         configuration.setExposedHeaders(
                 List.of(
-                        "Authorization"
+                        "Authorization", "X-Trace-Id"
                 )
         );
 

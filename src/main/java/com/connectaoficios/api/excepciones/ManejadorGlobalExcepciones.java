@@ -15,6 +15,52 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ManejadorGlobalExcepciones {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ManejadorGlobalExcepciones.class);
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorRespuesta> manejarRutaNoEncontrada(Exception ex, HttpServletRequest request) {
+        return respuesta(HttpStatus.NOT_FOUND, "No se encontró el recurso solicitado.", request);
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            jakarta.validation.ConstraintViolationException.class})
+    public ResponseEntity<ErrorRespuesta> manejarArgumento(Exception ex, HttpServletRequest request) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Los datos de la solicitud no son válidos.", request);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorRespuesta> manejarConflicto(Exception ex, HttpServletRequest request) {
+        registrarError(ex);
+        return respuesta(HttpStatus.CONFLICT, "No se puede completar la operación por un conflicto de datos.", request);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public ResponseEntity<ErrorRespuesta> manejarBaseDatos(Exception ex, HttpServletRequest request) {
+        registrarError(ex);
+        return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo completar la operación de datos.", request);
+    }
+
+    private ResponseEntity<ErrorRespuesta> respuesta(HttpStatus status, String mensaje, HttpServletRequest request) {
+        return ResponseEntity.status(status).body(new ErrorRespuesta(LocalDateTime.now(), status.value(),
+                status.getReasonPhrase(), mensaje, request.getRequestURI(), null));
+    }
+
+    // Los mensajes y causas de excepciones pueden contener credenciales o SQL.
+    private void registrarError(Exception ex) {
+        StringBuilder ubicaciones = new StringBuilder();
+        agregarTraza(ex, ubicaciones, java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
+        LOG.error("Error técnico (mensajes omitidos): {}", ubicaciones);
+    }
+
+    private void agregarTraza(Throwable error, StringBuilder salida, java.util.Set<Throwable> vistos) {
+        if (error == null || !vistos.add(error)) return;
+        salida.append("\nTipo: ").append(error.getClass().getName());
+        for (StackTraceElement elemento : error.getStackTrace()) salida.append("\n  at ").append(elemento);
+        for (Throwable suprimida : error.getSuppressed()) agregarTraza(suprimida, salida, vistos);
+        agregarTraza(error.getCause(), salida, vistos);
+    }
+
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ErrorRespuesta> manejarRecursoNoEncontrado(
@@ -113,6 +159,7 @@ public class ManejadorGlobalExcepciones {
             HttpServletRequest request
     ) {
 
+        registrarError(ex);
         ErrorRespuesta error = new ErrorRespuesta(
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),

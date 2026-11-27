@@ -282,3 +282,11 @@ Los comandos acceden a `localhost` dentro del Codespace; para abrir Swagger en n
 - [Informe de preparación y evidencias de referencia](docs/testing/PREPARATION_REPORT.md): histórico, no sustituye una validación nueva.
 - [Casos recomendados para Xray](docs/testing/XRAY_CASES.md).
 - [k6](tests/k6/README.md) y [ZAP](tests/zap/README.md).
+
+## Observabilidad
+
+La API usa SLF4J y Logback de Spring Boot. Los logs se envían a la salida estándar (por ejemplo, `docker compose logs -f`); cada petición incluye `traceId`, método, patrón de endpoint, estado y duración. El identificador `X-Trace-Id` se genera por petición y permite correlacionar la respuesta con los logs. Si existe una identidad JWT validada y numérica, se incluye su ID. No se registran cuerpos, parámetros de consulta, cabeceras, contraseñas, JWT ni credenciales; se registran patrones de ruta en vez de valores concretos. Los errores técnicos registran ubicaciones de pila incluidas las causas, sin mensajes potencialmente sensibles.
+
+`GET /api/health` es público y devuelve `UP` o `DOWN` (HTTP 503) tras comprobar la conexión a la base de datos.
+
+La vista `/monitoring` y `/monitoring/data` están desactivados por defecto. Para habilitarlos, establecer `MONITORING_UI_ENABLED=true` al iniciar la aplicación. Abrir `/monitoring` en el navegador e introducir un JWT válido de `ADMINISTRADOR` o `ADMINISTRADOR_PRINCIPAL`, obtenido mediante la autenticación de la API .NET. El token se guarda solo en `sessionStorage` y se envía en la cabecera Authorization para consultar `/monitoring/data`; el botón Cerrar sesión lo elimina. No introducir tokens en URL ni usar equipos compartidos o conexiones inseguras. El buffer conserva hasta 200 eventos por instancia, solo en memoria, y se pierde al reiniciar; las métricas describen ese buffer, no el tráfico histórico. Mantener la opción desactivada en producción salvo que el acceso esté debidamente controlado.

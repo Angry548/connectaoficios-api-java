@@ -44,6 +44,7 @@ public class ManejadorNoAutenticado implements AuthenticationEntryPoint {
         );
         error.put("ruta", request.getRequestURI());
         error.put("errores", null);
+        error.put("traceId", request.getAttribute("traceId"));
 
         objectMapper.writeValue(
                 response.getOutputStream(),

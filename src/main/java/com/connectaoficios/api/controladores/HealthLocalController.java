@@ -2,12 +2,10 @@ package com.connectaoficios.api.controladores;
 
 import java.util.Map;
 import javax.sql.DataSource;
-import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
 @RestController
-@Profile("local")
 public class HealthLocalController {
     private final DataSource datasource;
     public HealthLocalController(DataSource datasource) { this.datasource = datasource; }
