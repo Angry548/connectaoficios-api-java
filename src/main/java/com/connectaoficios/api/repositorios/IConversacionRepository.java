@@ -16,6 +16,9 @@ import java.util.Optional;
 public interface IConversacionRepository
         extends JpaRepository<Conversacion, Long> {
 
+    @Query("select c.id from Conversacion c where c.clienteId = :usuarioId or c.trabajadorId = :usuarioId")
+    java.util.List<Long> idsDelParticipante(@Param("usuarioId") Integer usuarioId);
+
     @Query("select c from SolicitudServicio s join s.conversacion c where s.id = :solicitudId")
     Optional<Conversacion> findBySolicitudId(@Param("solicitudId") Long solicitudId);
 
@@ -35,6 +38,7 @@ public interface IConversacionRepository
               and (:fechaDesde is null or c.fechaCreacion >= :fechaDesde)
               and (:fechaHasta is null or c.fechaCreacion <= :fechaHasta)
               and (:puedeEnviarMensajes is null or :puedeEnviarMensajes = true)
+            order by coalesce((select max(m.fechaEnvio) from Mensaje m where m.conversacion = c), c.fechaCreacion) desc, c.id desc
             """, countQuery = """
             select count(c) from Conversacion c
             where (c.clienteId = :usuarioId or c.trabajadorId = :usuarioId)

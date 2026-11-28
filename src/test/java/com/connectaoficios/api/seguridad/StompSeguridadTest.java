@@ -33,4 +33,5 @@ class StompSeguridadTest {
  @Test void noPermiteWildcardsNiOtrosDestinos(){for(String d:List.of("/topic/conversaciones/*","/topic/conversaciones/1/extra","/queue/1"))assertThrows(AccessDeniedException.class,()->interceptor.preSend(frame(StompCommand.SUBSCRIBE,d,true),null));verifyNoInteractions(acceso);}
  @Test void noAutenticado(){assertThrows(AccessDeniedException.class,()->interceptor.preSend(frame(StompCommand.SUBSCRIBE,"/topic/conversaciones/1",false),null));}
  @Test void envioDirectoAlBrokerDenegado(){assertThrows(AccessDeniedException.class,()->interceptor.preSend(frame(StompCommand.SEND,"/topic/conversaciones/1",true),null));}
+ @Test void presenciaSoloParaParticipantes(){when(acceso.conversacion(any(),eq(1L))).thenReturn(true);assertNotNull(interceptor.preSend(frame(StompCommand.SUBSCRIBE,"/topic/conversaciones/1/presencia",true),null));assertThrows(AccessDeniedException.class,()->interceptor.preSend(frame(StompCommand.SUBSCRIBE,"/topic/conversaciones/2/presencia",true),null));}
 }

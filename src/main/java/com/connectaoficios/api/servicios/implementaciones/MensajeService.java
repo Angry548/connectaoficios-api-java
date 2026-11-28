@@ -32,6 +32,10 @@ public class MensajeService implements IMensajeService {
     private final IMensajeRepository mensajeRepository;
     private final IConversacionRepository conversacionRepository;
     private final IChatTiempoRealService chatTiempoRealService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ExpoPushService expoPushService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.connectaoficios.api.servicios.interfaces.INotificacionService notificaciones;
 
     public MensajeService(
             IMensajeRepository mensajeRepository,
@@ -91,9 +95,27 @@ public class MensajeService implements IMensajeService {
                         mensajeGuardado
                 );
 
-        chatTiempoRealService.publicarMensaje(
-                salida
-        );
+        Integer receptor = remitenteId.equals(conversacion.getSolicitud().getClienteId())
+                ? conversacion.getSolicitud().getTrabajadorId() : conversacion.getSolicitud().getClienteId();
+        if (notificaciones != null) {
+            var aviso = new com.connectaoficios.api.dtos.notificacion.NotificacionGuardar();
+            aviso.setUsuarioDestinoId(receptor); aviso.setTipo("NUEVO_MENSAJE");
+            aviso.setTitulo("Nuevo mensaje"); aviso.setMensaje("Tienes un nuevo mensaje");
+            aviso.setReferenciaId(conversacion.getId()); notificaciones.guardar(aviso);
+        }
+        // El broker solo recibe mensajes de transacciones confirmadas.
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override public void afterCommit() {
+                            try { chatTiempoRealService.publicarMensaje(salida); } catch (RuntimeException ignored) { }
+                            try { if (expoPushService != null) expoPushService.enviar(receptor, salida); } catch (RuntimeException ignored) { }
+                        }
+                    });
+        } else {
+            // Permite el uso directo sin proxy transaccional, por ejemplo en pruebas unitarias.
+            chatTiempoRealService.publicarMensaje(salida);
+        }
 
         return salida;
     }
@@ -401,6 +423,9 @@ public class MensajeService implements IMensajeService {
         salida.setContenido(
                 mensaje.getContenido()
         );
+        salida.setTipo(mensaje.getTipo() == null
+                ? com.connectaoficios.api.enums.TipoMensaje.TEXT : mensaje.getTipo());
+        salida.setAdjuntos(mensaje.getAdjuntos().stream().map(AdjuntoChatService::dto).toList());
 
         salida.setFechaEnvio(
                 mensaje.getFechaEnvio()

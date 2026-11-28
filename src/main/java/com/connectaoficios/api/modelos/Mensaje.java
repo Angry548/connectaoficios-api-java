@@ -24,8 +24,15 @@ public class Mensaje {
     )
     private Conversacion conversacion;
 
+    @OneToMany(mappedBy = "mensaje", cascade = CascadeType.ALL)
+    private java.util.List<AdjuntoMensaje> adjuntos = new java.util.ArrayList<>();
+
     @Column(name = "remitente_id", nullable = false)
     private Integer remitenteId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 16)
+    private com.connectaoficios.api.enums.TipoMensaje tipo = com.connectaoficios.api.enums.TipoMensaje.TEXT;
 
     @Column(nullable = false, length = 2000)
     private String contenido;
@@ -41,6 +48,8 @@ public class Mensaje {
         if (fechaEnvio == null) {
             fechaEnvio = LocalDateTime.now();
         }
+
+        if (tipo == null) { tipo = com.connectaoficios.api.enums.TipoMensaje.TEXT; }
 
         if (leido == null) {
             leido = false;

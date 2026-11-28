@@ -36,10 +36,10 @@ public class StompSeguridad implements ChannelInterceptor {
         if (headers.getCommand() == StompCommand.SUBSCRIBE) {
             String destination = headers.getDestination();
             String prefix = "/topic/conversaciones/";
-            if (destination == null || !destination.matches("/topic/conversaciones/[1-9][0-9]*"))
+            if (destination == null || !destination.matches("/topic/conversaciones/[1-9][0-9]*(/presencia)?"))
                 throw new AccessDeniedException("Destino no permitido");
             try {
-                if (!acceso.conversacion(auth, Long.valueOf(destination.substring(prefix.length()))))
+                if (!acceso.conversacion(auth, Long.valueOf(destination.substring(prefix.length()).split("/")[0])))
                     throw new AccessDeniedException("Conversación ajena");
             } catch (NumberFormatException ex) { throw new AccessDeniedException("Destino inválido"); }
         }

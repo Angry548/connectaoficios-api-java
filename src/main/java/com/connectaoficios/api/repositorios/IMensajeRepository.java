@@ -15,6 +15,17 @@ import java.util.List;
 public interface IMensajeRepository
         extends JpaRepository<Mensaje, Long> {
 
+    @Query("""
+      select m from Mensaje m join fetch m.conversacion c
+      where c.id in :ids and not exists
+       (select m2.id from Mensaje m2 where m2.conversacion = c and
+        (m2.fechaEnvio > m.fechaEnvio or (m2.fechaEnvio = m.fechaEnvio and m2.id > m.id)))
+      """)
+    List<Mensaje> ultimosPorConversacion(@Param("ids") java.util.Collection<Long> ids);
+
+    @Query("select m.conversacion.id, count(m) from Mensaje m where m.conversacion.id in :ids and m.leido = false and m.remitenteId <> :usuario group by m.conversacion.id")
+    List<Object[]> contarNoLeidosPorConversacion(@Param("ids") java.util.Collection<Long> ids, @Param("usuario") Integer usuario);
+
     List<Mensaje> findByConversacionIdOrderByFechaEnvioAsc(
             Long conversacionId
     );

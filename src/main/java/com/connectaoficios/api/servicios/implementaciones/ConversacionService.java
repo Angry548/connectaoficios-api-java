@@ -28,6 +28,10 @@ import com.connectaoficios.api.repositorios.IPerfilTrabajadorRepository;
 public class ConversacionService implements IConversacionService {
 
     private static final int TAMANIO_MAXIMO_PAGINA = 100;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.connectaoficios.api.repositorios.IMensajeRepository mensajes;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.connectaoficios.api.repositorios.IAdjuntoMensajeRepository adjuntos;
 
     private final IConversacionRepository conversacionRepository;
     private final ISolicitudServicioRepository solicitudServicioRepository;
@@ -184,8 +188,33 @@ public class ConversacionService implements IConversacionService {
             perfilTrabajadorRepository.findByTrabajadorIdIn(trabajadores)
                     .forEach(p -> fotosTrabajadores.put(p.getTrabajadorId(), p.getFotoUrl()));
         }
-        Page<ConversacionSalida> resultado = conversaciones.map(c ->
-                convertirASalida(c, fotosClientes, fotosTrabajadores));
+        Map<Long, com.connectaoficios.api.modelos.Mensaje> ultimos = new HashMap<>();
+        Map<Long, Long> noLeidos = new HashMap<>();
+        if (!conversaciones.isEmpty() && mensajes != null) {
+            var ids = conversaciones.stream().map(Conversacion::getId).toList();
+            mensajes.ultimosPorConversacion(ids).forEach(m -> ultimos.put(m.getConversacion().getId(), m));
+            mensajes.contarNoLeidosPorConversacion(ids, usuarioId).forEach(row -> noLeidos.put((Long) row[0], (Long) row[1]));
+        }
+        Map<Long, java.util.List<com.connectaoficios.api.dtos.mensaje.AdjuntoSalida>> adjuntosPorMensaje = new HashMap<>();
+        if (!ultimos.isEmpty() && adjuntos != null) {
+            adjuntos.findByMensajeIdIn(ultimos.values().stream().map(com.connectaoficios.api.modelos.Mensaje::getId).toList())
+                .forEach(a -> adjuntosPorMensaje.computeIfAbsent(a.getMensaje().getId(), k -> new ArrayList<>()).add(AdjuntoChatService.dto(a)));
+        }
+        Page<ConversacionSalida> resultado = conversaciones.map(c -> {
+            ConversacionSalida dto = convertirASalida(c, fotosClientes, fotosTrabajadores);
+            var m = ultimos.get(c.getId());
+            dto.setUltimaActividad(m == null ? c.getFechaCreacion() : m.getFechaEnvio());
+            dto.setNoLeidos(noLeidos.getOrDefault(c.getId(), 0L));
+            if (m != null) {
+                var ultimo = new com.connectaoficios.api.dtos.mensaje.MensajeSalida();
+                ultimo.setId(m.getId()); ultimo.setConversacionId(c.getId()); ultimo.setRemitenteId(m.getRemitenteId());
+                ultimo.setContenido(m.getContenido()); ultimo.setFechaEnvio(m.getFechaEnvio()); ultimo.setLeido(m.getLeido());
+                ultimo.setTipo(m.getTipo() == null ? com.connectaoficios.api.enums.TipoMensaje.TEXT : m.getTipo());
+                ultimo.setAdjuntos(adjuntosPorMensaje.getOrDefault(m.getId(), List.of()));
+                dto.setUltimoMensaje(ultimo);
+            }
+            return dto;
+        });
 
         return PaginaSalida.desde(
                 resultado
@@ -215,10 +244,7 @@ public class ConversacionService implements IConversacionService {
         return PageRequest.of(
                 paginaSegura,
                 tamanioSeguro,
-                Sort.by(
-                        Sort.Direction.DESC,
-                        "fechaCreacion"
-                )
+                Sort.unsorted()
         );
     }
 

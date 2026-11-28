@@ -342,4 +342,46 @@ class MensajeServiceTest {
     }
  @Test void lecturaIdempotente(){var m=new Mensaje();m.setId(1L);m.setConversacion(conversacion);m.setRemitenteId(20);when(mensajeRepository.findById(1L)).thenReturn(Optional.of(m));mensajeService.marcarComoLeido(1L,10);mensajeService.marcarComoLeido(1L,10);verify(mensajeRepository,times(1)).save(m);}
  @Test void lecturaPorAjenoDenegada(){var m=new Mensaje();m.setId(1L);m.setConversacion(conversacion);m.setRemitenteId(20);when(mensajeRepository.findById(1L)).thenReturn(Optional.of(m));assertThrows(ReglaNegocioException.class,()->mensajeService.marcarComoLeido(1L,99));verify(mensajeRepository,never()).save(any());}
+    @Test
+    void publicacionOcurreSoloDespuesDelCommit() {
+        var dto = new MensajeGuardar();
+        dto.setConversacionId(1L);
+        dto.setContenido("Hola");
+        when(conversacionRepository.findById(1L)).thenReturn(Optional.of(conversacion));
+        when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(inv -> inv.getArgument(0));
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            mensajeService.guardar(dto, 10);
+            verifyNoInteractions(chatTiempoRealService);
+            var callbacks = org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations();
+            assertEquals(1, callbacks.size());
+            callbacks.forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+            verify(chatTiempoRealService, times(1)).publicarMensaje(any(MensajeSalida.class));
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void mensajeHistoricoSinTipoSeExponeComoTexto() {
+        Mensaje historico = crearMensaje(1L, 20, "Anterior");
+        historico.setTipo(null);
+        when(conversacionRepository.findById(1L)).thenReturn(Optional.of(conversacion));
+        when(mensajeRepository.findByConversacionIdOrderByFechaEnvioAsc(1L)).thenReturn(List.of(historico));
+        assertEquals(com.connectaoficios.api.enums.TipoMensaje.TEXT,
+                mensajeService.obtenerPorConversacion(1L, 10).get(0).getTipo());
+    }
+    @Test
+    void rollbackNoPublica() {
+        var dto = new MensajeGuardar(); dto.setConversacionId(1L); dto.setContenido("Hola");
+        when(conversacionRepository.findById(1L)).thenReturn(Optional.of(conversacion));
+        when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(inv -> inv.getArgument(0));
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            mensajeService.guardar(dto, 10);
+            org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations().forEach(
+                callback -> callback.afterCompletion(org.springframework.transaction.support.TransactionSynchronization.STATUS_ROLLED_BACK));
+            verifyNoInteractions(chatTiempoRealService);
+        } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+    }
 }

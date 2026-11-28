@@ -13,6 +13,8 @@ public class MensajeSalida {
     private Long conversacionId;
     private Integer remitenteId;
     private String contenido;
+    private com.connectaoficios.api.enums.TipoMensaje tipo;
     private LocalDateTime fechaEnvio;
     private Boolean leido;
+    private java.util.List<AdjuntoSalida> adjuntos = java.util.List.of();
 }

@@ -19,4 +19,7 @@ public class ConversacionSalida {
     private String trabajadorFotoUrl;
     private LocalDateTime fechaCreacion;
     private Boolean puedeEnviarMensajes;
+    private LocalDateTime ultimaActividad;
+    private com.connectaoficios.api.dtos.mensaje.MensajeSalida ultimoMensaje;
+    private long noLeidos;
 }
